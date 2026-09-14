@@ -1,0 +1,102 @@
+{
+  "schema_version": 1,
+  "name": "gotth-full-stack",
+  "components": [
+    {
+      "id": "caddy",
+      "adapter": "gotth-stack-adapter-caddy.v1",
+      "artifact": {
+        "source": "oci://registry.example.test/caddy",
+        "digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+      },
+      "configuration_digest": "sha256:2111111111111111111111111111111111111111111111111111111111111111",
+      "depends_on": [],
+      "capabilities": ["network.listen", "tls.manage"],
+      "secret_slots": []
+    },
+    {
+      "id": "identity-database",
+      "adapter": "gotth-stack-adapter-postgresql.v1",
+      "artifact": {
+        "source": "oci://registry.example.test/postgresql",
+        "digest": "sha256:1222222222222222222222222222222222222222222222222222222222222222"
+      },
+      "configuration_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+      "depends_on": [],
+      "capabilities": ["database.store"],
+      "secret_slots": ["database-password"]
+    },
+    {
+      "id": "authentik",
+      "adapter": "gotth-stack-adapter-authentik.v1",
+      "artifact": {
+        "source": "oci://registry.example.test/authentik",
+        "digest": "sha256:1333333333333333333333333333333333333333333333333333333333333333"
+      },
+      "configuration_digest": "sha256:2333333333333333333333333333333333333333333333333333333333333333",
+      "depends_on": ["identity-database"],
+      "capabilities": ["database.connect", "identity.manage"],
+      "secret_slots": ["database-password", "secret-key"]
+    },
+    {
+      "id": "mailu",
+      "adapter": "gotth-stack-adapter-mailu.v1",
+      "artifact": {
+        "source": "oci://registry.example.test/mailu",
+        "digest": "sha256:1444444444444444444444444444444444444444444444444444444444444444"
+      },
+      "configuration_digest": "sha256:2444444444444444444444444444444444444444444444444444444444444444",
+      "depends_on": ["caddy"],
+      "capabilities": ["mail.transport", "network.listen"],
+      "secret_slots": ["admin-password", "dkim-key"]
+    },
+    {
+      "id": "mail-database",
+      "adapter": "gotth-stack-adapter-postgresql.v1",
+      "artifact": {
+        "source": "oci://registry.example.test/postgresql",
+        "digest": "sha256:1555555555555555555555555555555555555555555555555555555555555555"
+      },
+      "configuration_digest": "sha256:2555555555555555555555555555555555555555555555555555555555555555",
+      "depends_on": [],
+      "capabilities": ["database.store"],
+      "secret_slots": ["database-password"]
+    },
+    {
+      "id": "gotth-mail",
+      "adapter": "gotth-stack-adapter-gotth-mail.v1",
+      "artifact": {
+        "source": "https://downloads.example.test/gotth-mail/release",
+        "digest": "sha256:1666666666666666666666666666666666666666666666666666666666666666"
+      },
+      "configuration_digest": "sha256:2666666666666666666666666666666666666666666666666666666666666666",
+      "depends_on": ["authentik", "caddy", "mail-database", "mailu"],
+      "capabilities": ["database.connect", "identity.oidc", "identity.scim", "mail.control"],
+      "secret_slots": ["database-password", "oidc-client-secret", "scim-bearer"]
+    },
+    {
+      "id": "board-database",
+      "adapter": "gotth-stack-adapter-postgresql.v1",
+      "artifact": {
+        "source": "oci://registry.example.test/postgresql",
+        "digest": "sha256:1777777777777777777777777777777777777777777777777777777777777777"
+      },
+      "configuration_digest": "sha256:2777777777777777777777777777777777777777777777777777777777777777",
+      "depends_on": [],
+      "capabilities": ["database.store"],
+      "secret_slots": ["database-password"]
+    },
+    {
+      "id": "gotth-bb",
+      "adapter": "gotth-stack-adapter-gotth-bb.v1",
+      "artifact": {
+        "source": "https://downloads.example.test/gotth-bb/release",
+        "digest": "sha256:1888888888888888888888888888888888888888888888888888888888888888"
+      },
+      "configuration_digest": "sha256:2888888888888888888888888888888888888888888888888888888888888888",
+      "depends_on": ["authentik", "board-database", "caddy"],
+      "capabilities": ["database.connect", "identity.oidc", "service.manage"],
+      "secret_slots": ["database-password", "oidc-client-secret", "session-key"]
+    }
+  ]
+}

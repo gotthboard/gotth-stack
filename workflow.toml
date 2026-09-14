@@ -1,0 +1,231 @@
+schema_version = 1
+project = "gotth-stack"
+profile = "strict"
+active = "v0.plan-kernel"
+
+[settings]
+worktree_root = "worktrees"
+workflow_root = "workflow"
+default_branch = "main"
+
+[toolchain]
+build = "go build -mod=readonly ./cmd/gotth-stack"
+test = "go test -mod=readonly -race -cover ./..."
+lint = "go vet -mod=readonly ./..."
+format = "gofmt -w"
+coverage = "go test -mod=readonly -coverprofile=coverage.out ./..."
+
+[coverage]
+map = "workflow/artifacts/global-coverage-map.md"
+profile = "strict"
+block_unresolved_high_risk = true
+exception_expiry_days = 14
+
+[feature."v0.plan-kernel"]
+id = "v0.plan-kernel"
+slug = "plan-kernel"
+name = "Strict non-mutating stack plan kernel"
+namespace = "stack"
+parent = ""
+state = "in_progress"
+risk = "critical"
+assurance = "traceable-tests"
+created_at = "2026-09-14T04:42:00Z"
+activated_at = "2026-09-14T04:42:00Z"
+updated_at = "2026-09-14T04:42:00Z"
+completed_at = ""
+folder = "workflow/features/v0-plan-kernel"
+worktree = "."
+branch = "workflow/feature/v0-plan-kernel"
+scope = ["Strict secret-free stack manifest", "Deterministic dependency planner", "SHA-256 manifest and plan binding", "Read-only validate and plan CLI", "Hostile parser and graph verification"]
+non_goals = ["Apply or host mutation", "Adapter loading", "Network access", "Secret values", "Docker or systemd invocation", "Live deployment", "Administrator UI"]
+affected_files = ["*.md", "*.go", "go.mod", ".go-version", ".gitignore", "Makefile", "LICENSE", "cmd/**", "pkg/**", "docs/**", "workflow.toml", "workflow.events.jsonl", "workflow/**"]
+invariants = ["V0 is side-effect free after opening one local input file", "Secret values have no representation", "Rejection errors do not echo attacker-controlled values", "Plan output is deterministic across declaration order", "No apply or arbitrary command path exists"]
+acceptance = ["Strict input and every graph failure reject without partial output", "Equivalent manifests produce identical digests and plans", "Public API and CLI gates pass", "Race, repeat, shuffle, fuzz, clean-clone, coverage, and two cold reviews pass"]
+
+[feature."v0.plan-kernel".rollback]
+strategy = "delete_unpublished_repository_or_revert_feature_commit"
+notes = "V0 performs no external mutation and has no consumer pin or release"
+data_loss_risk = false
+requires_migration_down = false
+
+[[feature."v0.plan-kernel".interface]]
+name = "Manifest and plan Go API plus CLI"
+kind = "api"
+stability = "unstable-unreleased"
+change = "new"
+
+[[feature."v0.plan-kernel".verification]]
+id = "verify"
+kind = "unit"
+command = "make verify"
+required = true
+timeout_seconds = 1200
+side_effect = "local_write"
+network = false
+retries = 0
+
+[[feature."v0.plan-kernel".verification]]
+id = "hostile-repeat"
+kind = "regression"
+command = "go test -mod=readonly -race -count=100 ./pkg/stack"
+required = true
+timeout_seconds = 1200
+side_effect = "local_write"
+network = false
+retries = 0
+
+[feature."v1.operation-journal"]
+id = "v1.operation-journal"
+slug = "operation-journal"
+name = "Durable approval and recovery journal"
+namespace = "stack"
+parent = ""
+state = "planned"
+risk = "critical"
+assurance = "traceable-tests"
+created_at = "2026-09-14T04:42:00Z"
+updated_at = "2026-09-14T04:42:00Z"
+folder = "workflow/features/v1-operation-journal"
+worktree = "worktrees/v1-operation-journal"
+branch = "workflow/feature/v1-operation-journal"
+scope = ["Installation identity", "Approval binding", "Durable journal", "Crash recovery", "Unknown-outcome state"]
+non_goals = ["Concrete platform adapter", "Live production apply", "Web UI"]
+affected_files = ["pkg/**", "cmd/**", "docs/**", "workflow/**", "workflow.toml", "workflow.events.jsonl"]
+invariants = ["No mutation starts without durable intent and exact approval", "Unknown outcomes never retry blindly"]
+acceptance = ["Crash-point and filesystem-failure tests prove recoverable state transitions"]
+
+[[feature."v1.operation-journal".dependency]]
+id = "v0.plan-kernel"
+type = "prerequisite"
+state = "unresolved"
+
+[feature."v2.platform-adapters"]
+id = "v2.platform-adapters"
+slug = "platform-adapters"
+name = "Caddy Authentik and PostgreSQL adapters"
+namespace = "stack"
+parent = ""
+state = "planned"
+risk = "critical"
+assurance = "traceable-tests"
+created_at = "2026-09-14T04:42:00Z"
+updated_at = "2026-09-14T04:42:00Z"
+folder = "workflow/features/v2-platform-adapters"
+worktree = "worktrees/v2-platform-adapters"
+branch = "workflow/feature/v2-platform-adapters"
+scope = ["Separate Caddy adapter", "Separate Authentik adapter", "Separate PostgreSQL adapter", "Disposable integration"]
+non_goals = ["Mailu", "GOTTH Mail", "GOTTH Board", "Provider-specific DNS"]
+affected_files = ["internal/adapters/**", "pkg/**", "cmd/**", "docs/**", "integration/**", "workflow/**", "workflow.toml", "workflow.events.jsonl"]
+invariants = ["Adapters receive component-local grants only", "Shared engine contains no product conditionals"]
+acceptance = ["Each adapter proves preflight apply verify rollback and recovery in disposable state"]
+
+[[feature."v2.platform-adapters".dependency]]
+id = "v1.operation-journal"
+type = "prerequisite"
+state = "unresolved"
+
+[feature."v3.mail-stack"]
+id = "v3.mail-stack"
+slug = "mail-stack"
+name = "Mailu and GOTTH Mail deployment"
+namespace = "stack"
+parent = ""
+state = "planned"
+risk = "critical"
+assurance = "traceable-tests"
+created_at = "2026-09-14T04:42:00Z"
+updated_at = "2026-09-14T04:42:00Z"
+folder = "workflow/features/v3-mail-stack"
+worktree = "worktrees/v3-mail-stack"
+branch = "workflow/feature/v3-mail-stack"
+scope = ["Mailu adapter", "GOTTH Mail adapter", "OIDC and SCIM composition", "Mail health", "Backup and rollback", "DNS provider seam"]
+non_goals = ["GOTTH Board", "Provider implementation inside gotth-stack"]
+affected_files = ["internal/adapters/**", "pkg/**", "cmd/**", "docs/**", "integration/**", "workflow/**", "workflow.toml", "workflow.events.jsonl"]
+invariants = ["Mail and identity state remain separately recoverable", "DNS providers remain independent extensions"]
+acceptance = ["Disposable mail stack install upgrade backup restore rollback and identity lifecycle pass"]
+
+[[feature."v3.mail-stack".dependency]]
+id = "v2.platform-adapters"
+type = "prerequisite"
+state = "unresolved"
+
+[feature."v4.board-stack"]
+id = "v4.board-stack"
+slug = "board-stack"
+name = "GOTTH Board deployment"
+namespace = "stack"
+parent = ""
+state = "planned"
+risk = "critical"
+assurance = "traceable-tests"
+created_at = "2026-09-14T04:42:00Z"
+updated_at = "2026-09-14T04:42:00Z"
+folder = "workflow/features/v4-board-stack"
+worktree = "worktrees/v4-board-stack"
+branch = "workflow/feature/v4-board-stack"
+scope = ["GOTTH Board adapter", "Isolated Authentik PostgreSQL and Caddy composition", "Migration and readiness", "Backup and rollback"]
+non_goals = ["Mail authority", "Shared product database or credentials"]
+affected_files = ["internal/adapters/**", "pkg/**", "cmd/**", "docs/**", "integration/**", "workflow/**", "workflow.toml", "workflow.events.jsonl"]
+invariants = ["Board has a separate product adapter and failure domain", "Board deployment never gains Mail authority"]
+acceptance = ["Disposable Board stack install upgrade backup restore rollback and readiness pass"]
+
+[[feature."v4.board-stack".dependency]]
+id = "v2.platform-adapters"
+type = "prerequisite"
+state = "unresolved"
+
+[feature."v5.admin-ui"]
+id = "v5.admin-ui"
+slug = "admin-ui"
+name = "First-run and stack operations administrator"
+namespace = "stack"
+parent = ""
+state = "planned"
+risk = "critical"
+assurance = "traceable-tests"
+created_at = "2026-09-14T04:42:00Z"
+updated_at = "2026-09-14T04:42:00Z"
+folder = "workflow/features/v5-admin-ui"
+worktree = "worktrees/v5-admin-ui"
+branch = "workflow/feature/v5-admin-ui"
+scope = ["First-run UI", "Preview and confirmation", "Component health", "Upgrade backup rollback operations", "Go templ Tailwind HTMX and HTML fallback"]
+non_goals = ["Extension-injected presentation", "Cross-product runtime administrator sessions"]
+affected_files = ["internal/httpui/**", "pkg/**", "cmd/**", "docs/**", "workflow/**", "workflow.toml", "workflow.events.jsonl"]
+invariants = ["UI calls the same controller service boundary", "Secret values are write-only and never redisplayed"]
+acceptance = ["Keyboard mobile no-JavaScript security and recovery workflows pass"]
+
+[[feature."v5.admin-ui".dependency]]
+id = "v3.mail-stack"
+type = "prerequisite"
+state = "unresolved"
+
+[[feature."v5.admin-ui".dependency]]
+id = "v4.board-stack"
+type = "prerequisite"
+state = "unresolved"
+
+[feature."v6.provider-extensions"]
+id = "v6.provider-extensions"
+slug = "provider-extensions"
+name = "Admit bounded provider extensions"
+namespace = "stack"
+parent = ""
+state = "planned"
+risk = "critical"
+assurance = "traceable-tests"
+created_at = "2026-09-14T04:42:00Z"
+updated_at = "2026-09-14T04:42:00Z"
+folder = "workflow/features/v6-provider-extensions"
+worktree = "worktrees/v6-provider-extensions"
+branch = "workflow/feature/v6-provider-extensions"
+scope = ["gotth-extensions consumer integration", "One independently admitted provider per repository", "Provider capability and transport grants"]
+non_goals = ["Provider packs", "Generic root or Docker socket access", "Provider code inside gotth-stack"]
+affected_files = ["internal/extensions/**", "pkg/**", "cmd/**", "docs/**", "integration/**", "workflow/**", "workflow.toml", "workflow.events.jsonl"]
+invariants = ["Repository naming grants no authority", "Each provider is pinned granted authenticated and audited independently"]
+acceptance = ["One DNS provider passes conformance without broader host authority"]
+
+[[feature."v6.provider-extensions".dependency]]
+id = "v2.platform-adapters"
+type = "prerequisite"
+state = "unresolved"

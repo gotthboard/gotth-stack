@@ -1,0 +1,7 @@
+coverage.out
+/gotth-stack
+.worker-locks/
+.worker-notes/
+.worker-evidence/
+.agents/notes/
+.artifacts/worker-notes/
