@@ -11,7 +11,9 @@ PostgreSQL components. Mailu remains only a GOTTH Mail-owned historical
 reference/import compatibility concern, never a `gotth-stack` component.
 
 This correction changes no planner code, runtime, credential, DNS record, live
-host, tag, release, or GitHub mirror.
+host, tag, release, or GitHub mirror. Exact correction source
+`c9e6545ca15bb347ab4b084a3a7797c12f389a30` passed the development-host
+verification recorded with Forgejo PR #2.
 
 ### 2026-09-13 — Create the non-mutating stack plan kernel
 
