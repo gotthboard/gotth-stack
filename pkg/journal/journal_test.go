@@ -61,6 +61,19 @@ func TestApprovalNoOpOperationAndReopen(t *testing.T) {
 	if err != nil || stored.State != StateComplete {
 		t.Fatalf("replayed state=%q err=%v", stored.State, err)
 	}
+	active, found, err := reopened.ActiveOperation()
+	if err != nil || found {
+		t.Fatalf("terminal operation reported active=%#v found=%v err=%v", active, found, err)
+	}
+	replayedApproval, err := reopened.Approval(operation.ApprovalID)
+	if err != nil || replayedApproval.ID != approval.ID {
+		t.Fatalf("replayed approval=%#v err=%v", replayedApproval, err)
+	}
+	replayedApproval.Components[0].Capabilities[0] = "caller.mutation"
+	again, err := reopened.Approval(approval.ID)
+	if err != nil || again.Components[0].Capabilities[0] == "caller.mutation" {
+		t.Fatalf("approval was not a deep copy: %#v err=%v", again, err)
+	}
 }
 
 func TestJournalLockAcrossProcesses(t *testing.T) {
@@ -449,6 +462,28 @@ func TestLargestValidPlanFitsOneApprovalRecord(t *testing.T) {
 	}
 	if info.Size() <= 1<<20 || info.Size() > int64(MaxPayloadSize+frameHeaderSize) {
 		t.Fatalf("largest approval frame size=%d", info.Size())
+	}
+}
+
+func TestRestartQueriesExposeOnlyActiveAuthority(t *testing.T) {
+	journal, _, now := newTestJournal(t)
+	plan := testPlan(t, false)
+	recordTestApproval(t, journal, plan, now)
+	operation := startTestOperation(t, journal, plan)
+	active, found, err := journal.ActiveOperation()
+	if err != nil || !found || active.ID != operation.ID {
+		t.Fatalf("active=%#v found=%v err=%v", active, found, err)
+	}
+	active.State = StateComplete
+	again, found, err := journal.ActiveOperation()
+	if err != nil || !found || again.State != StateApproved {
+		t.Fatalf("active operation was not a deep copy: %#v found=%v err=%v", again, found, err)
+	}
+	if _, err := journal.Approval("bad--id"); !errors.Is(err, ErrInvalidInput) {
+		t.Fatalf("invalid approval lookup=%v", err)
+	}
+	if _, err := journal.Approval("missing"); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("missing approval lookup=%v", err)
 	}
 }
 

@@ -61,7 +61,8 @@ on the `1.0.0-alpha.N` release line while any required workstream is incomplete.
   idempotency keys. Mutation idempotency digests are unique within an
   operation. One approval authorizes exactly one operation ID. Repeating the
   exact request returns the existing durable result; reusing an approval, ID,
-  or mutation digest for different content fails closed.
+  or mutation digest for different content fails closed. One installation has
+  at most one unfinished operation so separately approved plans cannot race.
 - `STACK-JRN-004`: Persist every journal transition as a bounded,
   checksum-framed, sequence-numbered, hash-chained record. A successful append
   means the record and its durable head have passed the required file and

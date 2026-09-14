@@ -30,6 +30,11 @@ func Create(path, installationID string) (*Journal, error) {
 	if err != nil {
 		return nil, ErrStorage
 	}
+	if err := validateOpenRoot(root); err != nil {
+		_ = root.Close()
+		_ = os.RemoveAll(path)
+		return nil, err
+	}
 	failed := true
 	defer func() {
 		_ = root.Close()
@@ -79,6 +84,10 @@ func Open(path, installationID string) (*Journal, Recovery, error) {
 	root, err := os.OpenRoot(path)
 	if err != nil {
 		return nil, Recovery{}, ErrStorage
+	}
+	if err := validateOpenRoot(root); err != nil {
+		_ = root.Close()
+		return nil, Recovery{}, err
 	}
 	journal := &Journal{
 		root: root, installationID: installationID, now: time.Now, ops: defaultStorageOps(),
@@ -142,11 +151,20 @@ func createJSONFile(root *os.Root, name string, value any) error {
 	if err != nil {
 		return ErrStorage
 	}
-	defer file.Close()
+	closed := false
+	defer func() {
+		if !closed {
+			_ = file.Close()
+		}
+	}()
 	if err := defaultStorageOps().write(file, encoded); err != nil {
 		return ErrStorage
 	}
 	if err := file.Sync(); err != nil {
+		return ErrStorage
+	}
+	closed = true
+	if err := file.Close(); err != nil {
 		return ErrStorage
 	}
 	return nil
@@ -157,8 +175,17 @@ func createEmptyFile(root *os.Root, name string) error {
 	if err != nil {
 		return ErrStorage
 	}
-	defer file.Close()
+	closed := false
+	defer func() {
+		if !closed {
+			_ = file.Close()
+		}
+	}()
 	if err := file.Sync(); err != nil {
+		return ErrStorage
+	}
+	closed = true
+	if err := file.Close(); err != nil {
 		return ErrStorage
 	}
 	return nil
@@ -218,6 +245,21 @@ func validateDirectory(root *os.Root) error {
 func validateRegularFile(root *os.Root, name string) error {
 	info, err := root.Lstat(name)
 	if err != nil || !info.Mode().IsRegular() || info.Mode().Perm() != 0o600 {
+		return ErrCorrupt
+	}
+	return nil
+}
+
+// validateOpenRoot checks the directory descriptor rather than trusting the
+// path-level Lstat result across a possible replacement race.
+func validateOpenRoot(root *os.Root) error {
+	directory, err := root.Open(".")
+	if err != nil {
+		return ErrCorrupt
+	}
+	defer directory.Close()
+	info, err := directory.Stat()
+	if err != nil || !info.IsDir() || info.Mode().Perm() != 0o700 {
 		return ErrCorrupt
 	}
 	return nil

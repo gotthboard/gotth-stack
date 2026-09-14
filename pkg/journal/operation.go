@@ -176,6 +176,22 @@ func (journal *Journal) Operation(operationID string) (Operation, error) {
 	return cloneOperation(*operation), nil
 }
 
+// ActiveOperation returns the sole unfinished operation, if any, so restart
+// recovery does not depend on a second authority database.
+func (journal *Journal) ActiveOperation() (Operation, bool, error) {
+	journal.mu.Lock()
+	defer journal.mu.Unlock()
+	if err := journal.usable(); err != nil {
+		return Operation{}, false, err
+	}
+	for _, operation := range journal.operations {
+		if operation.FinishedAt.IsZero() {
+			return cloneOperation(*operation), true, nil
+		}
+	}
+	return Operation{}, false, nil
+}
+
 // appendOperationRecord previews against a deep copy so no durable record can
 // encode an invalid transition, then appends and applies the exact same event.
 func (journal *Journal) appendOperationRecord(record journalRecord, operationID string) (Operation, error) {

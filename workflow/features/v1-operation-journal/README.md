@@ -16,7 +16,8 @@ rollback-eligible because failure does not prove that external state remained
 untouched. An operation cannot hide possibly live mutation behind an ordinary
 failed terminal; it must be rolled back or remain recovery-required.
 Each approval authorizes exactly one operation ID, closing authorization replay
-under a fresh operation name.
+under a fresh operation name. Each installation admits only one unfinished
+operation at a time.
 
 It does not own an `apply` command, adapters, network access, secret retrieval,
 Docker/systemd, a web UI, or live deployment. Completion means the journal can

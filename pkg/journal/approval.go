@@ -65,6 +65,24 @@ func (journal *Journal) RecordApproval(plan stack.Plan, input ApprovalInput) (Ap
 	return cloneApproval(approval), nil
 }
 
+// Approval returns the immutable deep-copied authority projection named by an
+// operation, allowing restart recovery without rereading an untrusted plan.
+func (journal *Journal) Approval(approvalID string) (Approval, error) {
+	journal.mu.Lock()
+	defer journal.mu.Unlock()
+	if err := journal.usable(); err != nil {
+		return Approval{}, err
+	}
+	if !validID(approvalID) {
+		return Approval{}, ErrInvalidInput
+	}
+	approval, ok := journal.approvals[approvalID]
+	if !ok {
+		return Approval{}, ErrNotFound
+	}
+	return cloneApproval(approval), nil
+}
+
 // secretRevisionsMatchPlan compares canonical component/slot pairs, not just
 // counts, so an approval cannot silently omit or substitute a secret binding.
 func secretRevisionsMatchPlan(plan stack.Plan, revisions []SecretRevision) bool {

@@ -18,5 +18,7 @@ func TestPublicAPISignatures(t *testing.T) {
 	var _ func(*journal.Journal, string) (journal.Operation, error) = (*journal.Journal).BeginRollback
 	var _ func(*journal.Journal, string, journal.Outcome) (journal.Operation, error) = (*journal.Journal).FinishOperation
 	var _ func(*journal.Journal, string) (journal.Operation, error) = (*journal.Journal).Operation
+	var _ func(*journal.Journal) (journal.Operation, bool, error) = (*journal.Journal).ActiveOperation
+	var _ func(*journal.Journal, string) (journal.Approval, error) = (*journal.Journal).Approval
 	var _ func(*journal.Journal) error = (*journal.Journal).Close
 }

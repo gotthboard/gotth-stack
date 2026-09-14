@@ -157,8 +157,11 @@ func (journal *Journal) replaceHead(head headFile) error {
 		return err
 	}
 	ok := false
+	closed := false
 	defer func() {
-		_ = file.Close()
+		if !closed {
+			_ = file.Close()
+		}
 		if !ok {
 			_ = journal.root.Remove("journal.head.tmp")
 		}
@@ -169,6 +172,7 @@ func (journal *Journal) replaceHead(head headFile) error {
 	if err := journal.ops.sync(file); err != nil {
 		return err
 	}
+	closed = true
 	if err := file.Close(); err != nil {
 		return err
 	}

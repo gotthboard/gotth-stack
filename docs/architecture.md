@@ -106,6 +106,8 @@ digests. Secret material is never copied into the journal. Caller-supplied
 approval, operation, and step IDs are idempotency keys; mutation idempotency
 digests are unique within an operation. One approval binds exactly one
 operation ID. Exact duplicates are stable, while conflicting reuse is rejected.
+The installation admits at most one unfinished operation, preventing two
+separately approved plans from racing through one stack.
 
 Callers do not supply journal observation times. A controller-owned clock
 records issue, transition, and result times and evaluates approval expiry, so a
@@ -128,9 +130,11 @@ Rollback may be operator-initiated after a successful mutation; it does not
 require a fabricated later failure.
 
 The journal scans linearly during open and retains reconstructed operation
-summaries in memory. The alpha format caps frame and log sizes. This is honest
-and auditable for initial deployments; segmentation or indexing is deferred
-until measured operation history justifies it.
+summaries in memory. A single-active-operation lookup and immutable approval
+lookup expose restart state without a second authority database. The alpha
+format caps frame and log sizes. This is honest and auditable for initial
+deployments; segmentation or indexing is deferred until measured operation
+history justifies it.
 
 ## Operation state machine
 
@@ -170,7 +174,8 @@ daemon contracts into provider extensions.
 
 Shared Caddy may serve the GOTTH Mail administrator and custom webmail HTTP
 routes alongside other domains. It does not replace the mail-specific ingress
-or proxy ordinary SMTP/IMAP traffic. Before V3 can apply anything, its topology
+or proxy ordinary SMTP/IMAP traffic. Before the mail-stack workstream can apply
+anything, its topology
 contract must assign each public port, certificate, ACME challenge, and
 hostname to exactly one owner; Caddy and mail front/proxy may not both claim the
 same listener or certificate lifecycle.

@@ -49,6 +49,21 @@ func TestDescriptorValidationRejectsWrongObjectAndMode(t *testing.T) {
 	}
 }
 
+func TestRootDescriptorValidationRejectsBroadMode(t *testing.T) {
+	path := t.TempDir()
+	if err := os.Chmod(path, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	root, err := os.OpenRoot(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer root.Close()
+	if err := validateOpenRoot(root); !errors.Is(err, ErrCorrupt) {
+		t.Fatalf("root mode=%v", err)
+	}
+}
+
 func TestAppendStorageFailuresPoisonHandle(t *testing.T) {
 	cases := map[string]func(*Journal){
 		"write": func(journal *Journal) {

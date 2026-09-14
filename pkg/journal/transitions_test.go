@@ -82,6 +82,25 @@ func TestDuplicateAndConflictingRequests(t *testing.T) {
 	}
 }
 
+func TestOnlyOneOperationMayRemainActive(t *testing.T) {
+	journal, _, now := newTestJournal(t)
+	plan := testPlan(t, false)
+	recordTestApproval(t, journal, plan, now)
+	if _, err := journal.RecordApproval(plan, ApprovalInput{ID: "approval-b", ActorID: "operator-a", AuthorityDigest: digestA, ExpiresAt: now.Add(testHour), SecretRevisions: []SecretRevision{}}); err != nil {
+		t.Fatal(err)
+	}
+	operation := startTestOperation(t, journal, plan)
+	if _, err := journal.StartOperation(OperationInput{ID: "operation-b", ApprovalID: "approval-b", PlanDigest: plan.Digest}); !errors.Is(err, ErrConflict) {
+		t.Fatalf("parallel operation=%v", err)
+	}
+	if _, err := journal.Cancel(operation.ID); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := journal.StartOperation(OperationInput{ID: "operation-b", ApprovalID: "approval-b", PlanDigest: plan.Digest}); err != nil {
+		t.Fatalf("operation after terminal predecessor=%v", err)
+	}
+}
+
 func TestRecoveryTerminalAndRecoveryOnlyRollbackRefusal(t *testing.T) {
 	t.Run("terminal-recovery", func(t *testing.T) {
 		journal, root, now := newTestJournal(t)

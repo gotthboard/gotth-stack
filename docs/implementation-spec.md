@@ -119,7 +119,8 @@ and 262,144 records.
 The fixed record struct is marshaled without maps. Each payload has sequence,
 previous digest, installation ID, timestamp, kind, and one event body. The
 first record has sequence 1 and the all-zero previous digest. Subsequent
-records increment by one and name the prior payload digest.
+records increment by one and name the prior payload digest. Body issue/start/
+finish times must equal the controller-observed envelope time.
 
 The head contains schema version, final durable sequence, and digest. Head
 replacement uses a same-directory temporary file, file sync, rename, and
@@ -141,7 +142,8 @@ Approval requires `approval_id`, `actor_id`, `authority_digest`, and an
 mismatch, reused IDs, or an approval already bound to another operation. Exact
 duplicate approval and operation requests are idempotent. Step IDs are also
 idempotency keys, and a mutation idempotency digest may name only one step
-within an operation.
+within an operation. A new operation is rejected while any prior operation in
+the installation remains unfinished.
 
 ### Transition rules
 
@@ -182,6 +184,11 @@ have started, no in-flight step, no failed rollback step, and a successful
 compensating step for every finished mutation that declared rollback
 available. A failed mutation result is conservatively treated as possibly
 partial external work.
+
+`ActiveOperation` returns the sole unfinished operation, if present, and
+`Approval` returns the immutable authority projection it names. Both return
+deep copies. A restarted controller therefore discovers recovery work without
+a second authority database or an unbounded history-list allocation.
 
 ### Filesystem and runtime contract
 

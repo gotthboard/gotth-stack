@@ -35,6 +35,9 @@ func TestReplayRejectsFramingAndSemanticCorruption(t *testing.T) {
 		"schema": func(t *testing.T, root string) {
 			rewriteFirstRecord(t, root, func(record *journalRecord) { record.SchemaVersion = 2 })
 		},
+		"timestamp-mismatch": func(t *testing.T, root string) {
+			rewriteFirstRecord(t, root, func(record *journalRecord) { record.Approval.IssuedAt = record.Approval.IssuedAt.Add(1) })
+		},
 		"noncanonical": rewriteFirstRecordNonCanonical,
 	}
 	for name, mutate := range cases {

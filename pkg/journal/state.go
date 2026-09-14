@@ -10,12 +10,21 @@ import (
 func (journal *Journal) applyRecord(record journalRecord) error {
 	switch record.Kind {
 	case recordApproval:
+		if !record.Approval.IssuedAt.Equal(record.ObservedAt) {
+			return ErrInvalidTransition
+		}
 		return journal.applyApproval(*record.Approval)
 	case recordOperation:
 		return journal.applyOperation(*record.Operation, record.ObservedAt)
 	case recordStepStart:
+		if !record.StepStart.StartedAt.Equal(record.ObservedAt) {
+			return ErrInvalidTransition
+		}
 		return journal.applyStepStart(*record.StepStart)
 	case recordStepFinish:
+		if !record.StepFinish.FinishedAt.Equal(record.ObservedAt) {
+			return ErrInvalidTransition
+		}
 		return journal.applyStepFinish(*record.StepFinish)
 	case recordCancel:
 		return journal.applyCancel(record.OperationID, record.ObservedAt)
@@ -61,6 +70,9 @@ func (journal *Journal) applyOperation(input operationRecord, observedAt time.Ti
 	}
 	for _, existing := range journal.operations {
 		if existing.ApprovalID == input.ApprovalID {
+			return ErrConflict
+		}
+		if existing.FinishedAt.IsZero() {
 			return ErrConflict
 		}
 	}
