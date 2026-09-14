@@ -31,6 +31,26 @@ checks the documented Linux/Go synchronization operations in the required
 order. Power-loss proof on every supported production filesystem remains a
 downstream release gate.
 
+## Caddy adapter
+
+| Requirement | Design / specification | Planned implementation | Verification contract | Status |
+| --- | --- | --- | --- | --- |
+| `STACK-CADDY-001` | `docs/caddy-adapter-architecture.md` least privilege | `open_linux.go`, `process.go` | binary digest, path, descriptor, ownership, mode, symlink, hardlink, lock, and loopback tests | verified candidate |
+| `STACK-CADDY-002` | secret boundary and bounds | `validate.go`, `preflight.go` | size, UTF-8, NUL, import, environment, digest, and disclosure tests | verified candidate |
+| `STACK-CADDY-003` | fixed process boundary | `process.go`, `preflight.go` | exact verb/argument/environment, output bound, cancellation, and failure tests | verified candidate |
+| `STACK-CADDY-004` | transaction and recovery model | `transaction.go` | exact duplicate/conflict, canonical metadata, private files, checkpoint, and tamper tests | verified candidate |
+| `STACK-CADDY-005` | persistent file replacement | `actions.go` | chown/chmod/write/sync/close/rename/directory-sync injection and umask test | verified candidate |
+| `STACK-CADDY-006` | runtime activation | `actions.go`, `runtime.go` | previous/candidate/other state matrix, reload failure, post-query mismatch, and real Caddy test | verified candidate |
+| `STACK-CADDY-007` | observation and reconciliation | `actions.go`, `transaction.go` | absent/incomplete/present and previous/candidate/other classification across reopen | verified candidate |
+| `STACK-CADDY-008` | reverse-order rollback | `actions.go`, `transaction.go` | stage rollback refusal, file restore, runtime reactivation, exact prior-state and unrelated-route proof | verified candidate |
+| `STACK-CADDY-009` | fixed failure boundary | all Caddy adapter files | sentinel, hostile-value, command-output, HTTP, storage, and context tests | verified candidate |
+| `STACK-CADDY-010` | admission boundary | private adapter only | development race/repeat/coverage/build, source scan, disposable Caddy, clean-copy, and review | verified candidate |
+
+The adapter contains mutation mechanisms but no authority path. The controller
+CLI does not import it, and `apply` remains absent. Exact commands, environment,
+results, limits, and remaining gaps are recorded in
+`workflow/features/v2-platform-adapters/caddy/evidence/verification.md`.
+
 ## Public website
 
 | Requirement | Design / specification | Planned implementation | Verification contract | Status |

@@ -17,8 +17,12 @@ features are complete.
    `gotthstack-web` executable using Go, templ, Tailwind CSS, and HTMX. It has
    no controller imports or mutation authority and can proceed independently
    while the platform-adapter workstream remains ready.
-4. Platform adapters (historical ID `v2.platform-adapters`) — separate Caddy, Authentik, and PostgreSQL adapter
-   contracts and disposable integration proofs.
+4. Platform adapters (historical ID `v2.platform-adapters`) — split into
+   separately admitted Caddy, Authentik, and PostgreSQL adapters. The Caddy
+   child owns only complete-config preflight, durable staging, atomic file
+   replacement, runtime activation/observation, rollback, and disposable
+   proof. Completing it does not complete the parent workstream or unblock an
+   apply command by itself.
 5. Mail stack (historical ID `v3.mail-stack`) — GOTTH Mail control-plane, front/proxy, Postfix, Dovecot,
    and Rspamd adapters; OIDC/SCIM composition; per-domain DNS/certificate
    provider seams; mail-flow health; backup; and rollback. Mailu is not a

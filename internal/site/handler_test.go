@@ -56,7 +56,7 @@ func TestHomeCompleteWithoutJavaScript(t *testing.T) {
 }
 
 func TestHeadMatchesWithoutBody(t *testing.T) {
-	for _, path := range []string{"/", "/principles?topic=recovery", "/static/site-ab3aa9255fd5fa082e8fc2f5c6739fa76ea155924477bd238ea44996b8b5e7ed.css", "/static/htmx-2.0.10.min.js", "/healthz"} {
+	for _, path := range []string{"/", "/principles?topic=recovery", "/static/site-4c3b7f235729e101ffa964903e3ec0c23e47ff7b3fc7ba41452d030b900eec52.css", "/static/htmx-2.0.10.min.js", "/healthz"} {
 		get := request(t, http.MethodGet, path, nil)
 		head := request(t, http.MethodHead, path, nil)
 		if head.Code != get.Code {
@@ -131,7 +131,7 @@ func TestPrinciplesRejectMalformedInputWithoutReflection(t *testing.T) {
 }
 
 func TestMethodsAndUnknownRoutesFailClosed(t *testing.T) {
-	for _, path := range []string{"/", "/principles", "/static/site-ab3aa9255fd5fa082e8fc2f5c6739fa76ea155924477bd238ea44996b8b5e7ed.css", "/healthz"} {
+	for _, path := range []string{"/", "/principles", "/static/site-4c3b7f235729e101ffa964903e3ec0c23e47ff7b3fc7ba41452d030b900eec52.css", "/healthz"} {
 		response := request(t, http.MethodPost, path, nil)
 		if response.Code != http.StatusMethodNotAllowed {
 			t.Errorf("POST %s status = %d, want 405", path, response.Code)
@@ -166,7 +166,7 @@ func TestEmbeddedAssetsAndHealth(t *testing.T) {
 		contains    string
 		cache       string
 	}{
-		{path: "/static/site-ab3aa9255fd5fa082e8fc2f5c6739fa76ea155924477bd238ea44996b8b5e7ed.css", contentType: "text/css; charset=utf-8", contains: "--color-signal", cache: "public, max-age=31536000, immutable"},
+		{path: "/static/site-4c3b7f235729e101ffa964903e3ec0c23e47ff7b3fc7ba41452d030b900eec52.css", contentType: "text/css; charset=utf-8", contains: "--color-signal", cache: "public, max-age=31536000, immutable"},
 		{path: "/static/htmx-2.0.10.min.js", contentType: "text/javascript; charset=utf-8", contains: "htmx", cache: "public, max-age=31536000, immutable"},
 		{path: "/healthz", contentType: "text/plain; charset=utf-8", contains: "ok\n", cache: "no-store"},
 	}
@@ -212,7 +212,7 @@ func BenchmarkRoutes(b *testing.B) {
 		{name: "health", path: "/healthz"},
 		{name: "principle-fragment", path: "/principles?topic=recovery", headers: map[string]string{"HX-Request": "true"}},
 		{name: "home", path: "/"},
-		{name: "css", path: "/static/site-ab3aa9255fd5fa082e8fc2f5c6739fa76ea155924477bd238ea44996b8b5e7ed.css"},
+		{name: "css", path: "/static/site-4c3b7f235729e101ffa964903e3ec0c23e47ff7b3fc7ba41452d030b900eec52.css"},
 		{name: "htmx", path: "/static/htmx-2.0.10.min.js"},
 	}
 	for _, test := range tests {

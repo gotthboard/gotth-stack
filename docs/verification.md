@@ -47,6 +47,27 @@ deployment for each supported topology.
 
 No live host is a valid plan-kernel or journal test target.
 
+## Caddy adapter gates
+
+- exact artifact and candidate SHA-256 binding;
+- executable, parent, config, state, lock, transaction, symlink, hardlink,
+  ownership, and mode refusal;
+- literal-loopback Admin API and direct no-proxy HTTP client;
+- fixed `adapt`, `validate`, and `reload` arguments with scrubbed environment,
+  bounded output, context cancellation, and fixed errors;
+- previous/candidate runtime synchronization before staging;
+- durable staging and atomic config checkpoint failure injection;
+- operation-ID conflict, duplicate idempotency, incomplete-stage
+  reconciliation and rollback, unexpected-state refusal, and reopen recovery;
+- exact file mode/UID/GID preservation independent of umask;
+- disposable Caddy install, activation, unrelated-route survival, adapter
+  reopen, restore, reactivation, and exact rollback verification;
+- race, repeat, shuffle, coverage, full repository regression, source boundary,
+  and clean-copy checks on the development host.
+
+Only the disposable process is a mutation target. The gate never points the
+adapter at `/etc/caddy`, systemd, DNS, or a live site.
+
 ## Public website gates
 
 - reproducible templ, Tailwind CSS, and HTMX asset generation with pinned

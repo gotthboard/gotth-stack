@@ -134,6 +134,61 @@ The public site sets no cookie, performs no tracking, accepts no form or
 credential, makes no outbound request, and imports no controller, journal, or
 adapter package.
 
+## Caddy adapter requirements
+
+The Caddy adapter is the first bounded child of the platform-adapter
+workstream. It manages one already-existing complete Caddyfile and the one
+running Caddy instance that owns it. It does not compose product routes,
+install Caddy, edit systemd, retrieve secrets, or expose an `apply` command.
+
+- `STACK-CADDY-001`: Accept only an absolute Caddy binary bound to its approved
+  SHA-256 artifact digest, one absolute existing regular Caddyfile, one private
+  adapter-state directory, one explicit service working directory, and a
+  loopback HTTP Admin API address. Reject
+  binary digest mismatch, symlinks, foreign ownership,
+  group/world-writable executable or configuration inputs, broad state modes,
+  non-loopback administration, and descriptor-level configuration
+  substitution. Both previous and candidate adapted configs must retain the
+  exact configured Admin API listener so apply cannot strand verification or
+  rollback.
+- `STACK-CADDY-002`: Bound a complete UTF-8 Caddyfile at one MiB, bind it to the
+  approved SHA-256 configuration digest, and reject NUL bytes, Caddyfile
+  imports, and environment substitutions. The current contract is explicitly
+  secret-free and single-file; raw configuration and command output never
+  appear in errors, results, logs, or evidence.
+- `STACK-CADDY-003`: Preflight with the fixed Caddy executable and fixed
+  `caddy adapt` plus `caddy validate` arguments, no shell, a bounded output
+  sink, and a scrubbed private environment. Preflight must not alter the live
+  Caddyfile or running Admin API configuration.
+- `STACK-CADDY-004`: Before live configuration mutation, durably stage the
+  exact previous and candidate Caddyfiles plus their non-secret file/runtime
+  digests in a private operation transaction. Exact duplicate staging is
+  idempotent; conflicting operation-ID reuse fails closed.
+- `STACK-CADDY-005`: Replace the complete Caddyfile by same-directory temporary
+  file, file sync, atomic rename, and directory sync while preserving its safe
+  permission mode. Install is idempotent only when the target is exactly the
+  staged previous or candidate digest; any third state requires recovery.
+- `STACK-CADDY-006`: Activate only the staged candidate with fixed
+  `caddy reload` arguments against the configured loopback Admin API. Success
+  requires the Admin API's canonical running JSON digest to equal the
+  preflight-adapted candidate digest; unexpected runtime state fails closed.
+- `STACK-CADDY-007`: Inspect staged, file, and runtime state without mutation so
+  an interrupted journal step can be reconciled rather than blindly retried.
+  Observation classifies exact previous, exact candidate, absent, or other
+  state and discloses only enums and SHA-256 digests.
+- `STACK-CADDY-008`: Rollback restores the staged previous file atomically,
+  then reloads that file. These are separate reverse-order mutation steps.
+  Rollback is complete only when both the file digest and running Admin API
+  digest equal the recorded preflight state.
+- `STACK-CADDY-009`: Every public failure is a fixed sentinel class. Context
+  cancellation, size limits, command failure, HTTP failure, filesystem failure,
+  mismatch, and recovery-required state are distinguishable without disclosing
+  paths, configuration, process output, URLs, or request data.
+- `STACK-CADDY-010`: Hostile unit tests and a disposable real-Caddy test prove
+  preflight, durable staging, atomic install, activation, idempotency,
+  reconciliation, unexpected-state refusal, rollback, and restart behavior.
+  This slice adds no controller `apply` command and touches no live Caddy.
+
 ## Downstream product requirements
 
 - Preview/apply bound to exact actor, plan digest, expiry, target installation,
