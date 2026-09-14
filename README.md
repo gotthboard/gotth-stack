@@ -18,11 +18,11 @@ gotth-stack plan stack.json
 
 The approval-and-recovery journal records durable authority, step intent,
 results, rollback compensation, and unknown-outcome state but executes
-nothing. The first private platform mechanism is a Caddy adapter with
-secret-free complete-config preflight, durable rollback staging, atomic file
-replacement, exact runtime observation, and disposable rollback proof. No CLI
-calls it and there is no `apply` command. External controller mutation remains
-blocked until the remaining adapter and disposable recovery contracts are
+nothing. The private platform mechanisms are separate Caddy, PostgreSQL 17,
+and Authentik 2026.5 adapters with digest-bound preflight, durable replacement
+state, exact runtime observation, and disposable rollback proofs. No CLI calls
+them and there is no `apply` command. External controller mutation remains
+blocked until a least-privilege journal-driven execution path is separately
 admitted. A pretty plan, journal record, or private adapter package is not
 permission to touch a host.
 
@@ -41,10 +41,10 @@ workflow IDs name internal workstreams, not product versions.
 - DNS and other provider mechanisms remain `gotth-extension-*` services.
 - No `gotth-stack` CLI operation currently invokes an adapter, Docker,
   systemd, Caddy, Authentik, PostgreSQL, a mail daemon, a DNS API, or a live
-  GOTTH product. The private Caddy package invokes only a digest-pinned Caddy
-  binary and literal-loopback Admin API when an explicit future controller
-  calls its separate mutation methods. The separate public website only serves
-  informational HTTP responses.
+  GOTTH product. Private adapters expose only component-scoped, separately
+  journalable mechanisms; they do not grant the controller Docker, Caddy, or
+  product authority. The separate public website only serves informational
+  HTTP responses.
 - Mailu is not a runtime component. GOTTH Mail retains only its separately
   documented reference/import compatibility; `gotth-stack` does not deploy it.
 

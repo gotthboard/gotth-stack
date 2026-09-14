@@ -42,6 +42,13 @@ digest-pinned PostgreSQL 17 container through fixed local-engine operations.
 It preserves database bytes across runtime rollback and does not grant the
 controller process Docker-socket access.
 
+The third mechanism is the private Authentik runtime adapter described in
+`authentik-adapter-architecture.md`. It controls one digest-pinned Authentik
+2026.5 server/worker pair, uses file-referenced secrets, loopback-only host
+networking, fixed health checks, and data-preserving reverse rollback. It
+deliberately omits the default worker Docker-socket mount and grants no tenant
+configuration or controller execution authority.
+
 ## Manifest and plan identity
 
 The manifest binds each component to:

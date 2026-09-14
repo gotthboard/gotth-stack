@@ -249,6 +249,16 @@ controller CLI does not import it. The package never pulls images, creates or
 deletes secrets, deletes data, applies SQL migrations, changes Docker policy,
 or exposes an `apply` command.
 
+## Authentik runtime adapter
+
+The private `internal/adapters/authentik` package owns the exact API, bounds,
+fixed Docker calls, file-referenced secret binding, durable pair-replacement
+state, effective server/worker inspection, health observation, recovery, and
+reverse rollback specified in `authentik-adapter-implementation-spec.md`. The
+controller CLI does not import it. The package never pulls images, mounts the
+Docker socket, creates or rotates secrets, configures tenants/applications,
+deletes persistent state, or exposes an `apply` command.
+
 ## Public website
 
 Canonical executable: `cmd/gotthstack-web`.

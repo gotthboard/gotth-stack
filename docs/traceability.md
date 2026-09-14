@@ -72,6 +72,27 @@ pull images, create or rotate secrets, run SQL, delete data, manage Docker,
 or add `apply`. Exact evidence is under
 `workflow/features/v2-platform-adapters/postgresql/`.
 
+## Authentik runtime adapter
+
+| Requirement | Design / specification | Implementation | Verification contract | Status |
+| --- | --- | --- | --- | --- |
+| `STACK-AUTH-001` | authority boundary | `open_linux.go`, `process.go` | executable/engine and source-boundary tests | verified |
+| `STACK-AUTH-002` | canonical specification | `model.go`, `validate.go` | topology, digest, and drift tests | verified |
+| `STACK-AUTH-003` | file URI secret contract | `storage_linux.go` | framing, revision, and effective-environment tests | verified |
+| `STACK-AUTH-004` | local 2026.5 image contract | `inspect.go` | metadata and pull-on-miss tests | verified |
+| `STACK-AUTH-005` | host network and role listeners | `process.go`, `inspect.go` | effective inspection and real pair proof | verified |
+| `STACK-AUTH-006` | hardened fixed create shape | `process.go` | argument and hostile drift tests | verified |
+| `STACK-AUTH-007` | persistent directory identity | `storage_linux.go` | descriptor drift and marker survival | verified |
+| `STACK-AUTH-008` | coherent preflight and stage | `preflight.go`, `transaction.go` | pair and durability tests | verified |
+| `STACK-AUTH-009` | role-scoped mutations | `actions.go` | ordered forward/reverse tests | verified |
+| `STACK-AUTH-010` | effective state and health | `inspect.go`, `actions.go` | health failure and real pair proof | verified |
+| `STACK-AUTH-011` | four-name recovery and rollback | `actions.go` | mixed-state, reopen, rollback tests | verified |
+| `STACK-AUTH-012` | admission boundary | private package | full development-host gates and cold review | verified |
+
+The package has runtime mechanisms but no controller authority, tenant
+configuration, outpost deployment, Docker-socket mount, or `apply` path.
+Exact evidence is under `workflow/features/v2-platform-adapters/authentik/`.
+
 ## Public website
 
 | Requirement | Design / specification | Planned implementation | Verification contract | Status |
