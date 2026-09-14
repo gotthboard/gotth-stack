@@ -191,11 +191,11 @@ slug = "platform-adapters"
 name = "Caddy Authentik and PostgreSQL adapters"
 namespace = "stack"
 parent = ""
-state = "ready"
+state = "split_required"
 risk = "critical"
 assurance = "traceable-tests"
 created_at = "2026-09-14T04:42:00Z"
-updated_at = "2026-09-14T08:26:05Z"
+updated_at = "2026-09-14T17:40:02Z"
 folder = "workflow/features/v2-platform-adapters"
 worktree = "worktrees/v2-platform-adapters"
 branch = "workflow/feature/v2-platform-adapters"
@@ -206,6 +206,78 @@ invariants = ["Adapters receive component-local grants only", "Shared engine con
 acceptance = ["Each adapter proves preflight apply verify rollback and recovery in disposable state"]
 
 [[feature."v2.platform-adapters".dependency]]
+id = "v1.operation-journal"
+type = "prerequisite"
+state = "satisfied"
+evidence = "workflow/features/v1-operation-journal/evidence/verification.md"
+satisfied_at = "2026-09-14T08:26:05Z"
+source_commit = "4a140590ed90472caad93d9d526fd4bbc1d89eb2"
+
+[feature."v2.platform-adapters.caddy"]
+id = "v2.platform-adapters.caddy"
+slug = "caddy"
+name = "Secret-free atomic Caddy configuration adapter"
+namespace = "stack"
+parent = "v2.platform-adapters"
+state = "done"
+risk = "critical"
+assurance = "traceable-tests"
+created_at = "2026-09-14T17:40:02Z"
+activated_at = "2026-09-14T17:40:02Z"
+updated_at = "2026-09-14T18:41:09Z"
+completed_at = "2026-09-14T18:41:09Z"
+folder = "workflow/features/v2-platform-adapters/caddy"
+worktree = "/home/linus/.openclaw/workspace/.artifacts/worktrees/gotth-stack-caddy-adapter"
+branch = "workflow/feature/caddy-adapter"
+scope = ["Fixed Caddy binary and loopback Admin API boundary", "Secret-free complete-Caddyfile preflight", "Durable operation transaction staging", "Atomic whole-file persistence", "Runtime activation and observation", "Crash reconciliation", "Reverse-order rollback", "Disposable real-Caddy integration proof", "Template-only Tailwind source isolation required by the full regression gate"]
+non_goals = ["Controller apply command", "Live Caddy mutation", "Caddy installation", "Systemd mutation", "Product route composition", "Secret retrieval or expansion", "Caddyfile imports", "Authentik adapter", "PostgreSQL adapter"]
+affected_files = ["internal/adapters/caddy/**", "assets/styles/site.css", "docs/**", "workflow/features/v2-platform-adapters/**", "workflow/artifacts/global-coverage-map.md", "workflow.toml", "workflow.events.jsonl", "Makefile"]
+invariants = ["Every external mutation remains a separate journalable call", "Runtime administration is literal-loopback only", "The adapter never invokes a shell or accepts arbitrary arguments", "Only exact previous or candidate states may be mutated", "Raw configuration and process output never cross the adapter result or error boundary", "Completing this child does not complete the parent or admit apply"]
+acceptance = ["STACK-CADDY-001 through STACK-CADDY-010 trace to code tests and evidence", "Every file durability checkpoint and state combination is covered", "Disposable Caddy proves preflight install activation restart observation rollback and unrelated-route survival", "Development-host race repeat coverage vet and build gates pass", "Production source scan proves no shell systemd live target or controller apply path"]
+
+[feature."v2.platform-adapters.caddy".rollback]
+strategy = "restore_staged_previous_caddyfile_then_reload_and_verify_exact_previous_runtime_digest"
+notes = "Adapter exposes file restore and runtime reactivation as separate reverse-order steps; this feature run mutates disposable state only"
+data_loss_risk = false
+requires_migration_down = false
+
+[[feature."v2.platform-adapters.caddy".interface]]
+name = "Private Caddy adapter Go API and transaction format v1"
+kind = "api"
+stability = "unstable-alpha"
+change = "new"
+
+[[feature."v2.platform-adapters.caddy".verification]]
+id = "unit-race"
+kind = "unit"
+command = "go test -mod=readonly -race -cover ./internal/adapters/caddy"
+required = true
+timeout_seconds = 1200
+side_effect = "local_write"
+network = false
+retries = 0
+
+[[feature."v2.platform-adapters.caddy".verification]]
+id = "disposable-caddy"
+kind = "integration"
+command = "GOTTH_CADDY_BIN=/usr/bin/caddy go test -mod=readonly -race -run '^TestDisposableCaddy$' ./internal/adapters/caddy"
+required = true
+timeout_seconds = 1200
+side_effect = "local_write"
+network = false
+retries = 0
+
+[[feature."v2.platform-adapters.caddy".verification]]
+id = "full-regression"
+kind = "regression"
+command = "make verify"
+required = true
+timeout_seconds = 1800
+side_effect = "local_write"
+network = false
+retries = 0
+
+[[feature."v2.platform-adapters.caddy".dependency]]
 id = "v1.operation-journal"
 type = "prerequisite"
 state = "satisfied"

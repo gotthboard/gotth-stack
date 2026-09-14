@@ -231,6 +231,14 @@ The journal records and validates this state without executing adapters. An
 `apply` command remains prohibited until adapter and disposable-runtime work
 is admitted; no mutation stub is exposed.
 
+## Caddy adapter
+
+The private `internal/adapters/caddy` package implements the first platform
+mechanism. Its exact API, bounds, fixed process calls, private transaction
+format, atomic file sequence, runtime-digest observation, and rollback model
+are specified in `caddy-adapter-implementation-spec.md`. It is not imported by
+`cmd/gotth-stack`; admission of this package does not create an apply command.
+
 ## Public website
 
 Canonical executable: `cmd/gotthstack-web`.
@@ -252,7 +260,7 @@ therefore uses `-mod=readonly` and reads no network or source asset directory.
 | --- | --- | --- |
 | `GET`, `HEAD` | `/` | complete landing page; `200` |
 | `GET`, `HEAD` | `/principles?topic=control|trust|recovery` | HTMX fragment when `HX-Request` is exactly `true`, otherwise complete page; `200` |
-| `GET`, `HEAD` | `/static/site-ab3aa9255fd5fa082e8fc2f5c6739fa76ea155924477bd238ea44996b8b5e7ed.css` | embedded minified CSS; immutable cache |
+| `GET`, `HEAD` | `/static/site-4c3b7f235729e101ffa964903e3ec0c23e47ff7b3fc7ba41452d030b900eec52.css` | embedded minified CSS; immutable cache |
 | `GET`, `HEAD` | `/static/htmx-2.0.10.min.js` | embedded pinned HTMX; immutable cache |
 | `GET`, `HEAD` | `/healthz` | `text/plain`; fixed `ok\n` |
 

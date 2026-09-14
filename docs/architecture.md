@@ -30,6 +30,12 @@ The admitted plan kernel implements only the upper-left planning boundary. It pa
 manifest, normalizes unordered declarations, validates the dependency graph,
 and emits a deterministic plan. It does not load adapters or inspect a host.
 
+The first platform mechanism is the private Caddy adapter described in
+`caddy-adapter-architecture.md`. Its durable staging, complete-file install,
+runtime activation, observation, and rollback calls remain separate so the
+existing journal can record each effect before execution. No controller or CLI
+invocation path exists yet.
+
 ## Manifest and plan identity
 
 The manifest binds each component to:

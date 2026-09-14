@@ -2,6 +2,27 @@
 
 ## Unreleased
 
+### 2026-09-14 12:40 CDT — Implement the bounded Caddy adapter slice
+
+Split the broad platform-adapter workstream and implement the Caddy child as a
+private package. It binds an absolute Caddy executable to its approved artifact
+digest, accepts one secret-free complete Caddyfile, validates it with fixed
+Caddy commands, stages the prior state durably, replaces the persistent file
+atomically, activates through a literal-loopback Admin API, observes exact
+runtime digests, reconciles interrupted staging, and rolls back in reverse
+order.
+
+This adds no CLI invocation, caller-supplied command or argument path, shell,
+systemd mutation,
+secret expansion, live deployment, Authentik adapter, PostgreSQL adapter,
+release, or tag. Completing this child does not complete the parent platform
+workstream or unblock `apply`.
+
+The full gate also exposed that Tailwind's automatic repository scan let
+unrelated Go identifiers perturb the website CSS hash. The stylesheet now
+disables automatic detection and retains its explicit templ-only source, so
+controller code cannot change the public asset by accident.
+
 ### 2026-09-14 09:27 CDT — Point the source link at the organization
 
 Change the landing-page GitHub destination from the single repository to the
