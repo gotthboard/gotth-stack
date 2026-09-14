@@ -51,6 +51,27 @@ CLI does not import it, and `apply` remains absent. Exact commands, environment,
 results, limits, and remaining gaps are recorded in
 `workflow/features/v2-platform-adapters/caddy/evidence/verification.md`.
 
+## PostgreSQL runtime adapter
+
+| Requirement | Design / specification | Implementation | Verification contract | Status |
+| --- | --- | --- | --- | --- |
+| `STACK-PG-001` | `docs/postgresql-adapter-architecture.md` authority boundary | `open_linux.go`, `process.go` | root-owned binary digest, fixed socket, private roots, lock, mode, and source-boundary tests | verified candidate |
+| `STACK-PG-002` | canonical specification and derived names | `validate.go`, `preflight.go` | ID, image, UID/GID, port, digest, and name tests | verified candidate |
+| `STACK-PG-003` | secret revision without persistence | `open_linux.go`, `preflight.go` | descriptor, owner/group, mode, symlink, size, NUL, digest, and tamper tests | verified candidate |
+| `STACK-PG-004` | fixed image and container inspection | `inspect.go`, `process.go` | exact image/runtime shape, existence/inspect split, drift, output, and ambiguity tests | verified candidate |
+| `STACK-PG-005` | durable transaction staging | `transaction.go` | canonical file, duplicate/conflict, incomplete/final residue, tamper, reopen, and cleanup-refusal tests | verified candidate |
+| `STACK-PG-006` | least-privilege container creation | `process.go`, `inspect.go` | exact argument vector and effective user, root, capability, security, port, bind, tmpfs, label, and environment tests | verified candidate |
+| `STACK-PG-007` | one journalable call per mutation | `actions.go` | idempotent successor, impossible predecessor, injected failure, and reopen-after-transition tests | verified candidate |
+| `STACK-PG-008` | exact observation and readiness | `actions.go`, `inspect.go` | state classification plus fixed `pg_isready`/`psql` and real PostgreSQL identity proof | verified candidate |
+| `STACK-PG-009` | same-major replacement and reverse rollback | `actions.go` | fake runtime and two-digest PostgreSQL 17 replacement, restore, restart, and data-preservation proof | verified candidate |
+| `STACK-PG-010` | fixed non-disclosing failures | all PostgreSQL adapter files | sentinel, context, command, parser, storage, conflict, and recovery tests | verified candidate |
+| `STACK-PG-011` | admission boundary | private adapter only | development race/repeat/shuffle/coverage/full gate, source scan, disposable Docker proof, and cold review | verified candidate |
+
+The private package has mechanism but no controller authority. It does not
+pull images, create or rotate secrets, run SQL, delete data, manage Docker,
+or add `apply`. Exact evidence is under
+`workflow/features/v2-platform-adapters/postgresql/`.
+
 ## Public website
 
 | Requirement | Design / specification | Planned implementation | Verification contract | Status |

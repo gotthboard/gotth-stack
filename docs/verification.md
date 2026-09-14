@@ -68,6 +68,31 @@ No live host is a valid plan-kernel or journal test target.
 Only the disposable process is a mutation target. The gate never points the
 adapter at `/etc/caddy`, systemd, DNS, or a live site.
 
+## PostgreSQL runtime adapter gates
+
+- root-owned Docker-client digest, fixed Unix socket, private root, lock,
+  descriptor, owner, mode, symlink, hardlink, and replacement checks;
+- canonical PostgreSQL 17 spec, derived names, exact secret revision, and
+  initialized-or-empty PostgreSQL 17 data-directory admission;
+- fixed image/list/inspect/create/start/stop/rename/remove/readiness commands,
+  scrubbed environment, bounded output, and no shell or pull path;
+- exact effective container labels, image, entrypoint, command, nonroot user,
+  read-only root, dropped capabilities, no-new-privileges, loopback port,
+  two binds, two bounded tmpfs mounts, and PostgreSQL environment controls;
+- canonical durable staging, conflicting-ID refusal, incomplete/final residue
+  recovery, state observation, idempotent successor transitions, and reopen at
+  every replacement/rollback boundary;
+- fixed `pg_isready` plus read-only `psql` server-major/database/role/recovery
+  identity verification;
+- real fresh PostgreSQL 17 creation and rollback plus digest-to-digest
+  PostgreSQL 17 replacement, reverse rollback, and persistent data proof;
+- race, 100-repeat, 20-shuffle, coverage, full-repository, source-boundary,
+  clean-copy, and cold-review gates on the development host.
+
+Only operation-derived disposable containers and private temporary roots are
+mutated. The gate does not touch live containers, Docker policy, registry
+state, product data, systemd, Caddy, DNS, secrets, or controller authority.
+
 ## Public website gates
 
 - reproducible templ, Tailwind CSS, and HTMX asset generation with pinned

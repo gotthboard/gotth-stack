@@ -1,6 +1,6 @@
-.PHONY: verify verify-web verify-caddy coverage build frontend-dependencies generate-web
+.PHONY: verify verify-web verify-caddy verify-postgresql coverage build frontend-dependencies generate-web
 
-verify: verify-web verify-caddy
+verify: verify-web verify-caddy verify-postgresql
 	version="$$(go env GOVERSION)"; test "$${version%%-*}" = "go1.26.6"
 	test -z "$$(gofmt -l $$(git ls-files --cached --others --exclude-standard -- '*.go'))"
 	go vet -mod=readonly ./...
@@ -16,6 +16,14 @@ verify-caddy:
 	test -z "$$(rg -n --glob '*.go' --glob '!*_test.go' 'gotth-stack/pkg/journal|func .*Apply|\"apply\"' internal/adapters/caddy cmd/gotth-stack)"
 	go vet -mod=readonly ./internal/adapters/caddy
 	go test -mod=readonly -race -cover ./internal/adapters/caddy
+
+verify-postgresql:
+	version="$$(go env GOVERSION)"; test "$${version%%-*}" = "go1.26.6"
+	test "$$(rg -l --glob '*.go' --glob '!*_test.go' 'os/exec|exec\.Command' internal/adapters/postgresql)" = "internal/adapters/postgresql/process.go"
+	test -z "$$(rg -n --glob '*.go' --glob '!*_test.go' 'systemctl|/bin/(sh|bash)|docker[[:space:]]+pull|volume[[:space:]]+(rm|prune)|fmt\.(Errorf|Sprintf)' internal/adapters/postgresql)"
+	test -z "$$(rg -n --glob '*.go' --glob '!*_test.go' 'gotth-stack/pkg/journal|func .*Apply|\"apply\"' internal/adapters/postgresql cmd/gotth-stack)"
+	go vet -mod=readonly ./internal/adapters/postgresql
+	go test -mod=readonly -race -cover ./internal/adapters/postgresql
 
 verify-web: generate-web
 	version="$$(go env GOVERSION)"; test "$${version%%-*}" = "go1.26.6"

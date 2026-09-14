@@ -195,7 +195,7 @@ state = "split_required"
 risk = "critical"
 assurance = "traceable-tests"
 created_at = "2026-09-14T04:42:00Z"
-updated_at = "2026-09-14T17:40:02Z"
+updated_at = "2026-09-14T20:55:00Z"
 folder = "workflow/features/v2-platform-adapters"
 worktree = "worktrees/v2-platform-adapters"
 branch = "workflow/feature/v2-platform-adapters"
@@ -278,6 +278,78 @@ network = false
 retries = 0
 
 [[feature."v2.platform-adapters.caddy".dependency]]
+id = "v1.operation-journal"
+type = "prerequisite"
+state = "satisfied"
+evidence = "workflow/features/v1-operation-journal/evidence/verification.md"
+satisfied_at = "2026-09-14T08:26:05Z"
+source_commit = "4a140590ed90472caad93d9d526fd4bbc1d89eb2"
+
+[feature."v2.platform-adapters.postgresql"]
+id = "v2.platform-adapters.postgresql"
+slug = "postgresql"
+name = "Data-preserving PostgreSQL 17 runtime adapter"
+namespace = "stack"
+parent = "v2.platform-adapters"
+state = "done"
+risk = "critical"
+assurance = "traceable-tests"
+created_at = "2026-09-14T20:55:00Z"
+activated_at = "2026-09-14T20:55:00Z"
+updated_at = "2026-09-14T21:28:00Z"
+completed_at = "2026-09-14T21:28:00Z"
+folder = "workflow/features/v2-platform-adapters/postgresql"
+worktree = "/home/linus/.openclaw/workspace/.artifacts/worktrees/gotth-stack-postgresql-adapter"
+branch = "workflow/feature/postgresql-adapter"
+scope = ["Fixed local Docker client and engine boundary", "Digest-pinned PostgreSQL 17 image inspection", "Derived one-container data and secret paths", "Secret revision binding without persistence", "Durable operation transaction staging", "Explicit runtime replacement steps", "Exact effective inspection and readiness", "Crash observation", "Reverse runtime rollback without data deletion", "Disposable PostgreSQL 17 proof"]
+non_goals = ["Controller apply command", "Docker installation or policy", "Image pulls or registry credentials", "Secret creation or rotation", "SQL migrations or schema ownership", "Backup or restore", "Data deletion or rewind", "PostgreSQL major upgrades", "Authentik adapter", "Product topology", "Live container mutation"]
+affected_files = ["internal/adapters/postgresql/**", "docs/**", "workflow/features/v2-platform-adapters/**", "workflow/artifacts/global-coverage-map.md", "workflow.toml", "workflow.events.jsonl", "Makefile"]
+invariants = ["Controller CLI never imports the adapter or receives Docker-socket authority", "Every engine mutation remains a separate journalable call", "Only one derived PostgreSQL container and its operation-derived rollback name may be touched", "No command uses a shell or caller-supplied arguments", "Secret bytes never enter transaction state results errors logs or evidence", "Database bytes are never deleted or claimed to roll back", "Only PostgreSQL 17-to-17 managed runtime replacement is admitted", "Completing this child does not complete the parent or admit apply"]
+acceptance = ["STACK-PG-001 through STACK-PG-011 trace to code tests and evidence", "Every reachable primary and rollback transition is covered and ambiguous combinations fail closed", "Disposable PostgreSQL 17 proves fresh start reopen exact readiness managed replacement reverse rollback and data preservation", "Development-host race repeat coverage vet and build gates pass", "Production source scan proves no shell image pull volume deletion live target or controller apply path"]
+
+[feature."v2.platform-adapters.postgresql".rollback]
+strategy = "stop_and_remove_exact_candidate_then_restore_and_conditionally_restart_exact_previous_container_without_deleting_data"
+notes = "Fresh-install rollback removes only the managed candidate container and deliberately preserves initialized data; product data rollback requires separate backup/restore authority"
+data_loss_risk = false
+requires_migration_down = false
+
+[[feature."v2.platform-adapters.postgresql".interface]]
+name = "Private PostgreSQL runtime adapter Go API and transaction format v1"
+kind = "api"
+stability = "unstable-alpha"
+change = "new"
+
+[[feature."v2.platform-adapters.postgresql".verification]]
+id = "unit-race"
+kind = "unit"
+command = "go test -mod=readonly -race -cover ./internal/adapters/postgresql"
+required = true
+timeout_seconds = 1200
+side_effect = "local_write"
+network = false
+retries = 0
+
+[[feature."v2.platform-adapters.postgresql".verification]]
+id = "disposable-postgresql-17"
+kind = "integration"
+command = "GOTTH_POSTGRES_DOCKER_BIN=/usr/bin/docker GOTTH_POSTGRES_IMAGE=postgres@sha256:a426e44bac0b759c95894d68e1a0ac03ecc20b619f498a91aae373bf06d8508d GOTTH_POSTGRES_REPLACEMENT_IMAGE=postgres@sha256:18cfe3ef5e6815560c98237d6216d1e5119702fb0f3894c8785dd58b8bbe5d73 go test -mod=readonly -race -run '^TestDisposablePostgreSQL17$' ./internal/adapters/postgresql"
+required = true
+timeout_seconds = 1800
+side_effect = "local_write"
+network = false
+retries = 0
+
+[[feature."v2.platform-adapters.postgresql".verification]]
+id = "full-regression"
+kind = "regression"
+command = "make verify"
+required = true
+timeout_seconds = 1800
+side_effect = "local_write"
+network = false
+retries = 0
+
+[[feature."v2.platform-adapters.postgresql".dependency]]
 id = "v1.operation-journal"
 type = "prerequisite"
 state = "satisfied"
