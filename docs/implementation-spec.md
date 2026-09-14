@@ -65,6 +65,7 @@ Canonical package: `github.com/gotthboard/gotth-stack/pkg/journal`.
 func Create(root, installationID string) (*Journal, error)
 func Open(root, installationID string) (*Journal, Recovery, error)
 func (j *Journal) RecordApproval(plan stack.Plan, input ApprovalInput) (Approval, error)
+func (j *Journal) Approval(approvalID string) (Approval, error)
 func (j *Journal) StartOperation(input OperationInput) (Operation, error)
 func (j *Journal) BeginStep(input StepInput) (Operation, error)
 func (j *Journal) FinishStep(input StepResultInput) (Operation, error)
@@ -72,6 +73,7 @@ func (j *Journal) Cancel(operationID string) (Operation, error)
 func (j *Journal) BeginRollback(operationID string) (Operation, error)
 func (j *Journal) FinishOperation(operationID string, outcome Outcome) (Operation, error)
 func (j *Journal) Operation(operationID string) (Operation, error)
+func (j *Journal) ActiveOperation() (Operation, bool, error)
 func (j *Journal) Close() error
 ```
 

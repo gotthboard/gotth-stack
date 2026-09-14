@@ -45,3 +45,11 @@ recovery. It does not mean any host mutation exists.
   pays one log sync plus one head-file sync/rename and one directory sync per
   authority transition; batching is forbidden because it would lie about
   durability.
+
+## Completion
+
+Journal code source `4a140590ed90472caad93d9d526fd4bbc1d89eb2`
+passed the development-host gates recorded in `evidence/verification.md`.
+The implementation satisfies `STACK-JRN-001` through `STACK-JRN-012` without
+adding an adapter, executor, apply command, secret-value representation,
+network client, deployment, tag, or release.

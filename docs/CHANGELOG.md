@@ -34,6 +34,14 @@ This remains a non-executing `1.0.0-alpha.N` workstream. It adds no adapter,
 apply command, network client, shell, secret retrieval, host mutation,
 deployment, tag, or release.
 
+Exact journal code source
+`4a140590ed90472caad93d9d526fd4bbc1d89eb2` passed ZFS-backed race
+verification, 100 race repetitions, 20 shuffled runs, two fuzz targets,
+hostile replay and durability-checkpoint tests, and two clean cold reviews.
+`pkg/journal` reached 84.3% statement coverage; the explicit remaining gap is
+limited to direct OS-error scaffolding, impossible fixed-struct marshal
+failures, and defensive branches public validation makes unreachable.
+
 ### 2026-09-14 01:28 CDT — Define the approval and recovery journal contract
 
 Contract commit: `e6b6e8f`

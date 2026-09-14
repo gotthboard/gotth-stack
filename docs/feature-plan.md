@@ -10,8 +10,9 @@ features are complete.
 2. Approval and recovery journal (historical ID `v1.operation-journal`) —
    durable installation identity, exact approval binding, fsync-backed
    checksum/hash-chain journal, replay, cancellation limits, rollback
-   references, and unknown-outcome recovery. Implementation is the current
-   `1.0.0-alpha.N` candidate; it grants no deployment authority.
+   references, and unknown-outcome recovery. The journal is implemented and
+   verified for the current `1.0.0-alpha.N` line; it grants no deployment
+   authority.
 3. Platform adapters (historical ID `v2.platform-adapters`) — separate Caddy, Authentik, and PostgreSQL adapter
    contracts and disposable integration proofs.
 4. Mail stack (historical ID `v3.mail-stack`) — GOTTH Mail control-plane, front/proxy, Postfix, Dovecot,

@@ -8,18 +8,22 @@ remain authoritative.
 
 | Requirement | Design / specification | Planned implementation | Verification contract | Status |
 | --- | --- | --- | --- | --- |
-| `STACK-JRN-001` | `docs/architecture.md` approval journal; `docs/implementation-spec.md` storage and lock | `pkg/journal/open_linux.go`, `pkg/journal/storage.go` | create/open, permissions, symlink, identity, lock subprocess tests | contract approved; code pending |
-| `STACK-JRN-002` | approval binding sections | `pkg/journal/approval.go` | exact plan and secret-revision projection tests | contract approved; code pending |
-| `STACK-JRN-003` | idempotency sections | `pkg/journal/approval.go`, `pkg/journal/operation.go` | exact duplicate and conflicting reuse tests | contract approved; code pending |
-| `STACK-JRN-004` | append durability sequence | `pkg/journal/storage.go` | injected append/sync/head/rename/directory-sync failures | contract approved; code pending |
-| `STACK-JRN-005` | replay and corruption model | `pkg/journal/replay.go` | schema/checksum/sequence/chain/identity/state corruption tests | contract approved; code pending |
-| `STACK-JRN-006` | torn-tail recovery rules | `pkg/journal/replay.go`, `pkg/journal/storage.go` | partial header/payload, stale head, ahead head, full corrupt frame tests | contract approved; code pending |
-| `STACK-JRN-007` | write-before-effect step contract | `pkg/journal/operation.go` | mutation metadata and missing rollback-policy rejection tests | contract approved; code pending |
-| `STACK-JRN-008` | interrupted-step recovery model | `pkg/journal/replay.go`, `pkg/journal/operation.go` | read-only retry and mutation recovery-required restart tests | contract approved; code pending |
-| `STACK-JRN-009` | result/failure/rollback state machine | `pkg/journal/operation.go` | result idempotency, failure point, rollback and terminal tests | contract approved; code pending |
-| `STACK-JRN-010` | cancellation boundary | `pkg/journal/operation.go` | before/during/after mutation cancellation tests | contract approved; code pending |
-| `STACK-JRN-011` | non-disclosing error contract | all journal files | sentinel-error and hostile-value disclosure scan/tests | contract approved; code pending |
-| `STACK-JRN-012` | authority boundary and non-goals | `pkg/journal/**`; CLI intentionally unchanged | source scan plus CLI regression tests | contract approved; code pending |
+| `STACK-JRN-001` | `docs/architecture.md` approval journal; `docs/implementation-spec.md` storage and lock | `pkg/journal/open_linux.go`, `pkg/journal/storage.go` | permissions, ownership, symlink, identity, descriptor, and subprocess-lock tests | verified at `4a140590` |
+| `STACK-JRN-002` | approval binding sections | `pkg/journal/approval.go` | largest-valid plan, exact projection, secret revision, expiry, and lookup tests | verified at `4a140590` |
+| `STACK-JRN-003` | idempotency sections | `pkg/journal/approval.go`, `pkg/journal/operation.go` | duplicate/conflicting ID, single-operation approval, and one-active-operation tests | verified at `4a140590` |
+| `STACK-JRN-004` | append durability sequence | `pkg/journal/storage.go` | injected log/head write, sync, rename, directory-sync, truncate, and close failures | verified on ZFS at `4a140590` |
+| `STACK-JRN-005` | replay and corruption model | `pkg/journal/replay.go`, `pkg/journal/state.go` | schema, JSON, checksum, sequence, chain, identity, time, state, frame, and log corruption tests | verified at `4a140590` |
+| `STACK-JRN-006` | torn-tail recovery rules | `pkg/journal/replay.go`, `pkg/journal/storage.go` | partial header/payload, stale/ahead/mismatched head, full-frame, and every-checkpoint reopen tests | verified on ZFS at `4a140590` |
+| `STACK-JRN-007` | write-before-effect step contract | `pkg/journal/operation.go`, `pkg/journal/state.go` | phase order, mutation idempotency, rollback policy, and durable transition tests | verified at `4a140590` |
+| `STACK-JRN-008` | interrupted-step recovery model | `pkg/journal/replay.go`, `pkg/journal/operation.go` | exact read-only retry, mutation reconciliation, restart lookup, and repeated-interruption tests | verified at `4a140590` |
+| `STACK-JRN-009` | result/failure/rollback state machine | `pkg/journal/operation.go`, `pkg/journal/state.go` | failure point, failed mutation compensation, operator rollback, recovery-only refusal, and terminal tests | verified at `4a140590` |
+| `STACK-JRN-010` | cancellation boundary | `pkg/journal/state.go` | approval, preflight, in-flight, mutation, rollback, and terminal cancellation tests | verified at `4a140590` |
+| `STACK-JRN-011` | non-disclosing error contract | all journal files | sentinel-error and hostile-value disclosure tests plus strict parser fuzzing | verified at `4a140590` |
+| `STACK-JRN-012` | authority boundary and non-goals | `pkg/journal/**`; CLI intentionally unchanged | production-source scan and CLI regression tests | verified at `4a140590` |
+
+The exact commands, environment, results, coverage limits, and filesystem
+claims are recorded in
+`workflow/features/v1-operation-journal/evidence/verification.md`.
 
 Tool limitations: Go race and unit tests cannot prove that storage hardware
 honors flushes after reporting success. Evidence proves GOTTH Stack issues and
