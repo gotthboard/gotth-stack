@@ -28,13 +28,13 @@ sudo GOTTH_POSTGRES_DOCKER_BIN=/usr/bin/docker \
   GOTTH_POSTGRES_IMAGE=postgres@sha256:a426... \
   GOTTH_POSTGRES_REPLACEMENT_IMAGE=postgres@sha256:18cfe... \
   postgresql.test -test.run '^TestDisposablePostgreSQL17$' -test.v
-PASS (20.69s)
+PASS (20.77s)
 
 go test -mod=readonly -race -count=100 ./internal/adapters/postgresql
-PASS (27.591s)
+PASS (30.930s)
 
 go test -mod=readonly -race -shuffle=on -count=20 ./internal/adapters/postgresql
-PASS (6.674s)
+PASS (7.154s)
 
 PATH=<private-node-26.7.0>:$PATH make verify
 PASS
@@ -50,7 +50,7 @@ The full gate proved deterministic web generation, zero npm audit
 vulnerabilities, formatting, source-boundary checks, vet, race tests, builds,
 manifest validation, and planning. Package statement coverage was:
 
-- `internal/adapters/postgresql`: 79.5%
+- `internal/adapters/postgresql`: 79.4%
 - `internal/adapters/caddy`: 81.8%
 - `pkg/stack`: 94.5%
 - `pkg/journal`: 84.3%
