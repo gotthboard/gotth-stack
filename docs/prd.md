@@ -189,6 +189,45 @@ install Caddy, edit systemd, retrieve secrets, or expose an `apply` command.
   reconciliation, unexpected-state refusal, rollback, and restart behavior.
   This slice adds no controller `apply` command and touches no live Caddy.
 
+## Authentik adapter requirements
+
+- `STACK-AUTH-001`: Own exactly one derived Authentik 2026.5 server/worker
+  pair through a root-owned digest-bound Docker client and the fixed local
+  engine endpoint. Grant no Docker authority to the controller CLI.
+- `STACK-AUTH-002`: Bind one canonical non-secret specification containing an
+  exact image repository digest, direct loopback PostgreSQL identity, six
+  distinct loopback listener ports, and one non-root UID/GID.
+- `STACK-AUTH-003`: Bind the exact existing PostgreSQL-password and Authentik-
+  secret-key file revisions without copying secret bytes into Docker
+  arguments, container inspection, transaction state, results, errors, or
+  evidence.
+- `STACK-AUTH-004`: Admit only a locally present image labeled Authentik
+  2026.5 with the documented `dumb-init -- ak` entrypoint; never pull.
+- `STACK-AUTH-005`: Use host networking only to compose with the PostgreSQL
+  adapter's loopback endpoint, force each role's HTTP, HTTPS, and metrics to
+  loopback, and reject every published port or alternate network mode.
+- `STACK-AUTH-006`: Run both roles non-root with a read-only root, bounded
+  writable temporary state, all capabilities dropped, no-new-privileges, and
+  no Docker socket or outpost-management authority.
+- `STACK-AUTH-007`: Bind the exact persistent data, certificates, and
+  templates directory identities. Never create, rewrite, delete, or claim to
+  roll back their contents.
+- `STACK-AUTH-008`: Preflight a coherent absent or fully managed pair and make
+  the complete previous/candidate/engine/filesystem binding durable before
+  mutation.
+- `STACK-AUTH-009`: Expose every role stop, rename, create, and start as a
+  separate journalable call with exact idempotent predecessor/successor rules.
+- `STACK-AUTH-010`: Verify exact effective container state and fixed `ak
+  healthcheck` success for server and worker; raw process output must remain
+  bounded and private.
+- `STACK-AUTH-011`: Reconcile every crash-visible four-name state and reverse
+  candidate runtime changes in exact order, preserving all durable bytes and
+  restoring only the staged previous pair.
+- `STACK-AUTH-012`: Hostile unit tests, repeat/shuffle/race/coverage gates, and
+  a disposable real Authentik 2026.5.2 proof cover fresh install, reopen,
+  managed replacement, health, reverse rollback, and persistent-state
+  survival. No live Authentik or controller `apply` path is admitted.
+
 ## PostgreSQL runtime adapter requirements
 
 The PostgreSQL adapter manages one PostgreSQL 17 container and its runtime

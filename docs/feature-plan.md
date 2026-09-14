@@ -23,9 +23,11 @@ features are complete.
    replacement, runtime activation/observation, rollback, and disposable
    proof. The PostgreSQL child owns one digest-pinned PostgreSQL 17 container,
    durable runtime-replacement state, exact effective inspection, readiness,
-   observation, data-preserving rollback, and disposable proof. Completing
-   either child does not complete the parent workstream or unblock an apply
-   command by itself.
+   observation, data-preserving rollback, and disposable proof. The Authentik
+   child owns one hardened server/worker pair with file-referenced
+   secrets, exact observation, health, recovery, and persistent-state-
+   preserving rollback. Completing any individual child does not complete the
+   parent workstream or unblock an apply command by itself.
 5. Mail stack (historical ID `v3.mail-stack`) — GOTTH Mail control-plane, front/proxy, Postfix, Dovecot,
    and Rspamd adapters; OIDC/SCIM composition; per-domain DNS/certificate
    provider seams; mail-flow health; backup; and rollback. Mailu is not a

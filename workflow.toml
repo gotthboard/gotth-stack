@@ -191,11 +191,12 @@ slug = "platform-adapters"
 name = "Caddy Authentik and PostgreSQL adapters"
 namespace = "stack"
 parent = ""
-state = "split_required"
+state = "done"
 risk = "critical"
 assurance = "traceable-tests"
 created_at = "2026-09-14T04:42:00Z"
-updated_at = "2026-09-14T20:55:00Z"
+updated_at = "2026-09-14T22:41:57Z"
+completed_at = "2026-09-14T22:41:57Z"
 folder = "workflow/features/v2-platform-adapters"
 worktree = "worktrees/v2-platform-adapters"
 branch = "workflow/feature/v2-platform-adapters"
@@ -356,6 +357,78 @@ state = "satisfied"
 evidence = "workflow/features/v1-operation-journal/evidence/verification.md"
 satisfied_at = "2026-09-14T08:26:05Z"
 source_commit = "4a140590ed90472caad93d9d526fd4bbc1d89eb2"
+
+[feature."v2.platform-adapters.authentik"]
+id = "v2.platform-adapters.authentik"
+slug = "authentik"
+name = "Hardened Authentik 2026.5 server and worker runtime adapter"
+namespace = "stack"
+parent = "v2.platform-adapters"
+state = "done"
+risk = "critical"
+assurance = "traceable-tests"
+created_at = "2026-09-14T21:57:17Z"
+activated_at = "2026-09-14T21:57:17Z"
+updated_at = "2026-09-14T22:41:57Z"
+completed_at = "2026-09-14T22:41:57Z"
+folder = "workflow/features/v2-platform-adapters/authentik"
+worktree = "/home/linus/.openclaw/workspace/.artifacts/worktrees/gotth-stack-authentik-adapter"
+branch = "workflow/feature/authentik-adapter"
+scope = ["Fixed local Docker client and Authentik 2026.5 image binding", "Derived server and worker runtime pair", "Direct loopback PostgreSQL composition", "File-referenced secret revisions", "Durable operation transaction staging", "Explicit pair replacement steps", "Exact effective inspection and health", "Crash observation", "Reverse runtime rollback without persistent-state deletion", "Disposable Authentik 2026.5.2 proof"]
+non_goals = ["Controller apply command", "Docker installation or policy", "Image pulls or registry credentials", "Secret creation or rotation", "PostgreSQL ownership", "Tenant application or user configuration", "Outpost deployment or Docker socket", "Backup or restore", "Persistent-state deletion or rewind", "Live Authentik mutation"]
+affected_files = ["internal/adapters/authentik/**", "docs/**", "workflow/features/v2-platform-adapters/**", "workflow/artifacts/global-coverage-map.md", "workflow.toml", "workflow.events.jsonl", "Makefile"]
+invariants = ["Controller CLI never imports the adapter or receives Docker-socket authority", "Every engine mutation remains a separate journalable call", "Only two derived primary names and their operation-derived rollback names may be touched", "No command uses a shell or caller-supplied arguments", "Secret bytes never enter Docker configuration transaction state results errors logs or evidence", "All Authentik listeners are loopback and the worker has no Docker socket", "Persistent state is never deleted or claimed to roll back", "Completing this child does not admit controller apply"]
+acceptance = ["STACK-AUTH-001 through STACK-AUTH-012 trace to code tests and evidence", "Every reachable primary and rollback pair transition is covered and ambiguous combinations fail closed", "Disposable Authentik 2026.5.2 proves fresh start reopen managed replacement reverse rollback and persistent-state survival", "Development-host race repeat coverage vet and build gates pass", "Production source scan proves no shell image pull Docker socket live target tenant mutation or controller apply path"]
+
+[feature."v2.platform-adapters.authentik".rollback]
+strategy = "stop_and_remove_exact_candidate_pair_then_restore_and_conditionally_restart_exact_previous_pair_without_deleting_persistent_state"
+notes = "Role operations remain individually journalable; this feature run mutates disposable state only"
+data_loss_risk = false
+requires_migration_down = false
+
+[[feature."v2.platform-adapters.authentik".interface]]
+name = "Private Authentik runtime adapter Go API and transaction format v1"
+kind = "api"
+stability = "unstable-alpha"
+change = "new"
+
+[[feature."v2.platform-adapters.authentik".verification]]
+id = "unit-race"
+kind = "unit"
+command = "go test -mod=readonly -race -cover ./internal/adapters/authentik"
+required = true
+timeout_seconds = 1200
+side_effect = "local_write"
+network = false
+retries = 0
+
+[[feature."v2.platform-adapters.authentik".verification]]
+id = "disposable-authentik-2026-5"
+kind = "integration"
+command = "GOTTH_AUTHENTIK_DOCKER_BIN=/usr/bin/docker GOTTH_AUTHENTIK_IMAGE=ghcr.io/goauthentik/server@sha256:3ddf09bbf69ded6a9634ecd753a01608d477f811e99bb5ffe9fc2ef7ad1c6581 go test -mod=readonly -race -run '^TestDisposableAuthentik2026_5$' ./internal/adapters/authentik"
+required = true
+timeout_seconds = 2400
+side_effect = "local_write"
+network = false
+retries = 0
+
+[[feature."v2.platform-adapters.authentik".verification]]
+id = "full-regression"
+kind = "regression"
+command = "make verify"
+required = true
+timeout_seconds = 1800
+side_effect = "local_write"
+network = false
+retries = 0
+
+[[feature."v2.platform-adapters.authentik".dependency]]
+id = "v2.platform-adapters.postgresql"
+type = "prerequisite"
+state = "satisfied"
+evidence = "workflow/features/v2-platform-adapters/postgresql/evidence/verification.md"
+satisfied_at = "2026-09-14T21:33:34Z"
+source_commit = "b5dd28ad22fbc35b0d9cd681f7f14dd97554ca14"
 
 [feature."v3.mail-stack"]
 id = "v3.mail-stack"

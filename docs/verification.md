@@ -93,6 +93,32 @@ Only operation-derived disposable containers and private temporary roots are
 mutated. The gate does not touch live containers, Docker policy, registry
 state, product data, systemd, Caddy, DNS, secrets, or controller authority.
 
+## Authentik runtime adapter gates
+
+- root-owned Docker-client digest, fixed Unix socket, private state, lock,
+  descriptor, ownership, mode, symlink, and hardlink refusal;
+- canonical Authentik 2026.5 specification, direct loopback PostgreSQL,
+  six distinct role listeners, two exact secret revisions, and three durable
+  directory identities;
+- fixed image/list/inspect/create/start/stop/rename/remove/health commands,
+  scrubbed environment, bounded output, no shell, and `--pull never`;
+- exact effective role labels, image, entrypoint, command, nonroot user,
+  read-only root, host networking, loopback listeners, dropped capabilities,
+  no-new-privileges, bounded tmpfs/shared memory, fixed mounts, and no Docker
+  socket;
+- canonical durable staging, conflicting-ID refusal, incomplete/final residue
+  recovery, four-name observation, ordered idempotent transitions, and reopen;
+- fixed `ak healthcheck` verification for server and worker;
+- real Authentik 2026.5.2 fresh creation, reopen, configuration replacement,
+  reverse rollback, and persistent-state preservation against disposable
+  PostgreSQL 17;
+- race, 100-repeat, 20-shuffle, coverage, full-repository, source-boundary,
+  clean-copy, and cold-review gates on the development host.
+
+Only operation-derived disposable containers and private test roots may be
+mutated. No live Authentik, product data, Docker policy, secret, tenant,
+outpost, controller authority, release, or tag is part of this gate.
+
 ## Public website gates
 
 - reproducible templ, Tailwind CSS, and HTMX asset generation with pinned

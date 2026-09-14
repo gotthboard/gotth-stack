@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+### 2026-09-14 — Complete the Authentik runtime adapter slice
+
+Add a digest-pinned Authentik 2026.5 server/worker adapter with direct
+loopback PostgreSQL composition, file-referenced secrets, six role-scoped
+loopback listeners, exact hardened-container inspection, durable transaction
+state, explicit replacement operations, health checks, crash observation, and
+persistent-state-preserving reverse rollback. This completes the three private
+platform mechanisms but adds no Docker grant, tenant/outpost management,
+controller `apply`, live deployment, release, or tag.
+
 ### 2026-09-14 — Implement the PostgreSQL runtime adapter slice
 
 Define a component-scoped, digest-pinned PostgreSQL 17 container contract and
