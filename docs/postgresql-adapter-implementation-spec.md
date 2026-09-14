@@ -9,6 +9,7 @@ Canonical private package:
 func Open(Options) (*Adapter, error)
 func (a *Adapter) Preflight(context.Context, Request) (*Prepared, Summary, error)
 func (a *Adapter) Stage(*Prepared) (Summary, error)
+func (a *Adapter) ReconcileStage(operationID string) (Summary, State, error)
 func (a *Adapter) Observe(context.Context, operationID string) (Observation, error)
 func (a *Adapter) StopPrevious(context.Context, operationID string) (Summary, error)
 func (a *Adapter) PreservePrevious(context.Context, operationID string) (Summary, error)
@@ -70,6 +71,7 @@ bounded and discarded after strict JSON or fixed readiness parsing.
 Create arguments are built by the package and enforce:
 
 - exact digest-pinned image and derived container name;
+- `--pull never`, so a missing image fails instead of opening a registry path;
 - fixed ownership labels and candidate configuration/secret digests;
 - `--user <uid>:<gid>`, `--read-only`, `--cap-drop ALL`, and
   `--security-opt no-new-privileges`;
@@ -94,8 +96,8 @@ staged spec and report PostgreSQL 17 primary mode.
 
 ## Durable transaction and state machine
 
-Transactions use canonical `0600` JSON files under a private `0700`
-`transactions/<operation-id>` directory. Stage writes, syncs, and atomically
+Transactions use canonical `0600` `<operation-id>.json` files under a private
+`0700` `transactions` directory. Stage writes, syncs, and atomically
 renames a hidden sibling, then syncs the parent. Metadata binds adapter options,
 engine identity, primary/rollback names, candidate and optional previous
 specifications and image IDs, previous running state, data identity, secret
