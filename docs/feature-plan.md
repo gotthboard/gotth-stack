@@ -6,8 +6,10 @@
    fsync-backed journal, replay, cancellation, and unknown-outcome recovery.
 3. `v2.platform-adapters` — separate Caddy, Authentik, and PostgreSQL adapter
    contracts and disposable integration proofs.
-4. `v3.mail-stack` — Mailu and GOTTH Mail adapters, OIDC/SCIM composition,
-   DNS/certificate provider seam, mail-flow health, backup, and rollback.
+4. `v3.mail-stack` — GOTTH Mail control-plane, front/proxy, Postfix, Dovecot,
+   and Rspamd adapters; OIDC/SCIM composition; per-domain DNS/certificate
+   provider seams; mail-flow health; backup; and rollback. Mailu is not a
+   runtime component.
 5. `v4.board-stack` — GOTTH Board adapter, isolated Authentik/PostgreSQL/Caddy
    composition, migration/readiness proof, backup, and rollback.
 6. `v5.admin-ui` — first-run and operations UI rendered by the controller with

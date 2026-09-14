@@ -1,4 +1,5 @@
 # V3 Mail stack
 
-Planned. Separate Mailu and GOTTH Mail adapters plus identity, mail health,
-backup, restore, rollback, and provider seams.
+Planned. Separate adapters for the GOTTH Mail control plane, mail front/proxy,
+Postfix, Dovecot, and Rspamd, plus identity, multi-domain mail health, backup,
+restore, rollback, and provider seams. Mailu is not a runtime component.

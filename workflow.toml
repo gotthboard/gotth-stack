@@ -86,7 +86,7 @@ risk = "critical"
 assurance = "traceable-tests"
 created_at = "2026-09-14T04:42:00Z"
 activated_at = "2026-09-14T05:04:20Z"
-updated_at = "2026-09-14T05:04:20Z"
+updated_at = "2026-09-14T05:25:03Z"
 folder = "workflow/features/v1-operation-journal"
 worktree = "worktrees/v1-operation-journal"
 branch = "workflow/feature/v1-operation-journal"
@@ -104,6 +104,44 @@ evidence = "workflow/features/v0-plan-kernel/evidence/verification.md"
 satisfied_at = "2026-09-14T05:04:20Z"
 source_commit = "baec0ebc089ff09ec2975ec23130aa9f35f60852"
 
+[feature."v1.operation-journal.mail-runtime-topology-correction"]
+id = "v1.operation-journal.mail-runtime-topology-correction"
+slug = "mail-runtime-topology-correction"
+name = "Correct the planned GOTTH Mail runtime topology"
+namespace = "stack"
+parent = "v1.operation-journal"
+state = "done"
+risk = "high"
+assurance = "traceable-tests"
+created_at = "2026-09-14T05:23:14Z"
+activated_at = "2026-09-14T05:23:14Z"
+updated_at = "2026-09-14T05:25:03Z"
+completed_at = "2026-09-14T05:25:03Z"
+folder = "workflow/features/v1-operation-journal/mail-runtime-topology-correction"
+worktree = "."
+branch = "workflow/feature/mail-runtime-topology-correction"
+scope = ["Correct the stack PRD and architecture", "Correct the mail feature plan and workflow", "Replace the false Mailu example component with the GOTTH Mail control plane and daemon topology"]
+non_goals = ["Planner code", "Journal implementation", "Adapter implementation", "Runtime or live deployment"]
+affected_files = ["README.md", "docs/prd.md", "docs/architecture.md", "docs/feature-plan.md", "docs/CHANGELOG.md", "examples/full-stack.json", "workflow.toml", "workflow.events.jsonl", "workflow/features/v3-mail-stack/README.md", "workflow/features/v1-operation-journal/mail-runtime-topology-correction/**"]
+invariants = ["Mailu is not a gotth-stack runtime dependency", "The generic V0 planner remains unchanged", "Mail delivery and daemon lookup do not depend on Authentik availability", "No live state changes"]
+acceptance = ["Canonical documents agree on the GOTTH Mail control-plane front/proxy Postfix Dovecot Rspamd and PostgreSQL topology", "The corrected example validates and plans deterministically", "No runtime source file changes"]
+
+[feature."v1.operation-journal.mail-runtime-topology-correction".rollback]
+strategy = "revert_documentation_correction_commit"
+notes = "No runtime or data mutation is performed"
+data_loss_risk = false
+requires_migration_down = false
+
+[[feature."v1.operation-journal.mail-runtime-topology-correction".verification]]
+id = "manifest-plan"
+kind = "regression"
+command = "go run -mod=readonly ./cmd/gotth-stack validate examples/full-stack.json && go run -mod=readonly ./cmd/gotth-stack plan examples/full-stack.json"
+required = true
+timeout_seconds = 120
+side_effect = "local_write"
+network = false
+retries = 0
+
 [feature."v2.platform-adapters"]
 id = "v2.platform-adapters"
 slug = "platform-adapters"
@@ -119,7 +157,7 @@ folder = "workflow/features/v2-platform-adapters"
 worktree = "worktrees/v2-platform-adapters"
 branch = "workflow/feature/v2-platform-adapters"
 scope = ["Separate Caddy adapter", "Separate Authentik adapter", "Separate PostgreSQL adapter", "Disposable integration"]
-non_goals = ["Mailu", "GOTTH Mail", "GOTTH Board", "Provider-specific DNS"]
+non_goals = ["GOTTH Mail control plane", "Mail daemons", "GOTTH Board", "Provider-specific DNS"]
 affected_files = ["internal/adapters/**", "pkg/**", "cmd/**", "docs/**", "integration/**", "workflow/**", "workflow.toml", "workflow.events.jsonl"]
 invariants = ["Adapters receive component-local grants only", "Shared engine contains no product conditionals"]
 acceptance = ["Each adapter proves preflight apply verify rollback and recovery in disposable state"]
@@ -132,7 +170,7 @@ state = "unresolved"
 [feature."v3.mail-stack"]
 id = "v3.mail-stack"
 slug = "mail-stack"
-name = "Mailu and GOTTH Mail deployment"
+name = "GOTTH Mail control plane and daemon deployment"
 namespace = "stack"
 parent = ""
 state = "planned"
@@ -143,11 +181,11 @@ updated_at = "2026-09-14T04:42:00Z"
 folder = "workflow/features/v3-mail-stack"
 worktree = "worktrees/v3-mail-stack"
 branch = "workflow/feature/v3-mail-stack"
-scope = ["Mailu adapter", "GOTTH Mail adapter", "OIDC and SCIM composition", "Mail health", "Backup and rollback", "DNS provider seam"]
-non_goals = ["GOTTH Board", "Provider implementation inside gotth-stack"]
+scope = ["GOTTH Mail control-plane adapter", "Mail front/proxy adapter", "Postfix adapter", "Dovecot adapter", "Rspamd adapter", "OIDC and SCIM composition", "Per-domain mail state", "Mail health", "Backup and rollback", "DNS provider seam"]
+non_goals = ["Mailu runtime or adapter", "GOTTH Board", "Provider implementation inside gotth-stack"]
 affected_files = ["internal/adapters/**", "pkg/**", "cmd/**", "docs/**", "integration/**", "workflow/**", "workflow.toml", "workflow.events.jsonl"]
-invariants = ["Mail and identity state remain separately recoverable", "DNS providers remain independent extensions"]
-acceptance = ["Disposable mail stack install upgrade backup restore rollback and identity lifecycle pass"]
+invariants = ["Mailu is not a runtime dependency", "Mail delivery and daemon lookup do not depend on Authentik availability", "Every public listener certificate and ACME path has one owner", "Domains retain explicit DNS DKIM TLS policy alias and mailbox state", "Mail and identity state remain separately recoverable", "DNS providers remain independent extensions"]
+acceptance = ["Disposable GOTTH Mail control-plane Postfix Dovecot Rspamd and front/proxy stack passes install upgrade backup restore rollback multi-domain mail-flow and identity lifecycle tests"]
 
 [[feature."v3.mail-stack".dependency]]
 id = "v2.platform-adapters"

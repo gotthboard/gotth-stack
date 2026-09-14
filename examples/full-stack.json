@@ -39,16 +39,52 @@
       "secret_slots": ["database-password", "secret-key"]
     },
     {
-      "id": "mailu",
-      "adapter": "gotth-stack-adapter-mailu.v1",
+      "id": "mail-front",
+      "adapter": "gotth-stack-adapter-mail-front.v1",
       "artifact": {
-        "source": "oci://registry.example.test/mailu",
+        "source": "oci://registry.example.test/gotth-mail-front",
         "digest": "sha256:1444444444444444444444444444444444444444444444444444444444444444"
       },
       "configuration_digest": "sha256:2444444444444444444444444444444444444444444444444444444444444444",
-      "depends_on": ["caddy"],
-      "capabilities": ["mail.transport", "network.listen"],
-      "secret_slots": ["admin-password", "dkim-key"]
+      "depends_on": ["dovecot", "postfix", "rspamd"],
+      "capabilities": ["mail.ingress", "network.listen", "tls.serve"],
+      "secret_slots": ["tls-private-key"]
+    },
+    {
+      "id": "postfix",
+      "adapter": "gotth-stack-adapter-postfix.v1",
+      "artifact": {
+        "source": "oci://registry.example.test/postfix",
+        "digest": "sha256:1455555555555555555555555555555555555555555555555555555555555555"
+      },
+      "configuration_digest": "sha256:2455555555555555555555555555555555555555555555555555555555555555",
+      "depends_on": ["gotth-mail", "rspamd"],
+      "capabilities": ["mail.deliver", "mail.submit", "network.listen"],
+      "secret_slots": ["control-plane-token"]
+    },
+    {
+      "id": "dovecot",
+      "adapter": "gotth-stack-adapter-dovecot.v1",
+      "artifact": {
+        "source": "oci://registry.example.test/dovecot",
+        "digest": "sha256:1466666666666666666666666666666666666666666666666666666666666666"
+      },
+      "configuration_digest": "sha256:2466666666666666666666666666666666666666666666666666666666666666",
+      "depends_on": ["gotth-mail"],
+      "capabilities": ["mail.imap", "mail.store", "network.listen"],
+      "secret_slots": ["control-plane-token"]
+    },
+    {
+      "id": "rspamd",
+      "adapter": "gotth-stack-adapter-rspamd.v1",
+      "artifact": {
+        "source": "oci://registry.example.test/rspamd",
+        "digest": "sha256:1477777777777777777777777777777777777777777777777777777777777777"
+      },
+      "configuration_digest": "sha256:2477777777777777777777777777777777777777777777777777777777777777",
+      "depends_on": ["gotth-mail"],
+      "capabilities": ["mail.filter", "mail.sign"],
+      "secret_slots": ["control-plane-token", "dkim-private-key"]
     },
     {
       "id": "mail-database",
@@ -70,7 +106,7 @@
         "digest": "sha256:1666666666666666666666666666666666666666666666666666666666666666"
       },
       "configuration_digest": "sha256:2666666666666666666666666666666666666666666666666666666666666666",
-      "depends_on": ["authentik", "caddy", "mail-database", "mailu"],
+      "depends_on": ["authentik", "caddy", "mail-database"],
       "capabilities": ["database.connect", "identity.oidc", "identity.scim", "mail.control"],
       "secret_slots": ["database-password", "oidc-client-secret", "scim-bearer"]
     },

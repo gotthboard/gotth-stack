@@ -3,10 +3,11 @@
 ## Problem
 
 GOTTH Mail and GOTTH Board require repeatable deployment with Caddy,
-Authentik, PostgreSQL, Mailu, and supporting GOTTH components. The current
+Authentik, PostgreSQL, and their supporting components. GOTTH Mail additionally
+requires its own front/proxy, Postfix, Dovecot, and Rspamd runtime. The current
 mechanisms are individually useful but no product owns dependency ordering,
-cross-component preview, exact approval, health admission, upgrade, backup,
-or rollback for the complete stack.
+cross-component preview, exact approval, health admission, upgrade, backup, or
+rollback for the complete stack.
 
 ## Product boundary
 
@@ -17,9 +18,10 @@ artifacts, capabilities, transport identities, and grants are admitted.
 
 Shared orchestration owns dependency order, plan identity, confirmation,
 journaling, health gates, and rollback coordination. Separate adapters own the
-mechanics for Caddy, Authentik, PostgreSQL, Mailu, GOTTH Mail, and GOTTH Board.
-Provider-specific work such as GoDaddy DNS remains in an independent
-`gotth-extension-<slug>` repository.
+mechanics for Caddy, Authentik, PostgreSQL, the GOTTH Mail control plane,
+front/proxy, Postfix, Dovecot, Rspamd, and GOTTH Board. Provider-specific work
+such as GoDaddy DNS remains in an independent `gotth-extension-<slug>`
+repository.
 
 ## V0 requirements
 
@@ -52,6 +54,10 @@ Provider-specific work such as GoDaddy DNS remains in an independent
   with ordinary HTML fallback.
 - Separate Mail and Board adapters sharing orchestration but not product policy,
   databases, credentials, or failure domains.
+- One GOTTH Mail deployment may serve multiple mail domains, but each domain's
+  DNS, DKIM, TLS, policy, aliases, and mailbox namespace remain explicit.
+- Mail delivery and daemon lookup remain available when Authentik is
+  unavailable; OIDC/SCIM failure must not become SMTP/IMAP failure.
 - Backup and restore proof before any upgrade or destructive change is
   presented as safe.
 
@@ -62,6 +68,8 @@ Provider-specific work such as GoDaddy DNS remains in an independent
 - No product-specific conditionals in the shared engine.
 - No extension that bootstraps its own extension host.
 - No global administrator that silently inherits every product authority.
+- No Mailu runtime component or adapter. Mailu reference/import compatibility
+  remains GOTTH Mail-owned and is not a deployment dependency.
 - No live deployment in V0.
 
 ## V0 acceptance

@@ -12,8 +12,11 @@ gotth-stack controller
       +--> Caddy adapter
       +--> Authentik adapter
       +--> PostgreSQL adapter
-      +--> Mailu adapter
       +--> GOTTH Mail adapter
+      +--> mail front/proxy adapter
+      +--> Postfix adapter
+      +--> Dovecot adapter
+      +--> Rspamd adapter
       +--> GOTTH Board adapter
       +--> admitted gotth-extension-* provider
 ```
@@ -72,3 +75,23 @@ adapters may pin them exactly; `gotth-stack` does not absorb or duplicate their
 policy. `gotth-extensions` defines extension compatibility, while a concrete
 `gotth-extension-*` repository supplies one provider mechanism. Neither grants
 deployment authority by naming convention.
+
+## Mail runtime topology
+
+Mailu is not deployed by `gotth-stack`. GOTTH Mail owns the mail control plane
+and canonical domain/mailbox/alias state. Separate adapters manage its
+front/proxy, Postfix, Dovecot, and Rspamd processes without turning those core
+daemon contracts into provider extensions.
+
+Shared Caddy may serve the GOTTH Mail administrator and custom webmail HTTP
+routes alongside other domains. It does not replace the mail-specific ingress
+or proxy ordinary SMTP/IMAP traffic. Before V3 can apply anything, its topology
+contract must assign each public port, certificate, ACME challenge, and
+hostname to exactly one owner; Caddy and mail front/proxy may not both claim the
+same listener or certificate lifecycle.
+
+The deployment graph may order Authentik configuration before GOTTH Mail
+identity wiring, but that ordering does not create a runtime availability
+dependency. Postfix delivery, Dovecot access/lookup, and Rspamd decisions must
+continue when Authentik is unavailable. A shared mail runtime may host multiple
+domains, with per-domain DNS, DKIM, TLS, policy, alias, and mailbox state.

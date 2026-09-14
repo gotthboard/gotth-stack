@@ -1,9 +1,10 @@
 # gotth-stack
 
 `gotth-stack` is the bootstrap and deployment controller for GOTTH products.
-It will coordinate Caddy, Authentik, PostgreSQL, Mailu, GOTTH Mail, and GOTTH
-Board through separate, least-privilege adapters while keeping provider-specific
-mechanisms in independent `gotth-extension-*` repositories.
+It will coordinate Caddy, Authentik, PostgreSQL, GOTTH Mail's front/proxy,
+Postfix, Dovecot, Rspamd, and GOTTH Board through separate, least-privilege
+adapters while keeping provider-specific mechanisms in independent
+`gotth-extension-*` repositories.
 
 The admitted V0 slice is deliberately non-mutating. It validates a strict,
 secret-free stack manifest and renders a deterministic, digest-bound deployment
@@ -28,11 +29,13 @@ tests are admitted. A pretty plan is not permission to touch a host.
   component full of product conditionals.
 - DNS and other provider mechanisms remain `gotth-extension-*` services.
 - No library or CLI operation currently invokes Docker, systemd, Caddy,
-  Authentik, PostgreSQL, Mailu, a DNS API, or a live GOTTH product.
+  Authentik, PostgreSQL, a mail daemon, a DNS API, or a live GOTTH product.
+- Mailu is not a runtime component. GOTTH Mail retains only its separately
+  documented reference/import compatibility; `gotth-stack` does not deploy it.
 
 See `docs/` for the product, architecture, implementation, verification, and
 feature contracts.
 
 `examples/full-stack.json` demonstrates dependency composition for Caddy,
-Authentik, Mailu, GOTTH Mail, and GOTTH Board. Its URLs and digests are inert
-placeholders and cannot be deployed.
+Authentik, PostgreSQL, the GOTTH Mail control plane and mail daemons, and GOTTH
+Board. Its URLs and digests are inert placeholders and cannot be deployed.
