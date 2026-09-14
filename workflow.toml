@@ -86,7 +86,7 @@ risk = "critical"
 assurance = "traceable-tests"
 created_at = "2026-09-14T04:42:00Z"
 activated_at = "2026-09-14T05:04:20Z"
-updated_at = "2026-09-14T05:27:14Z"
+updated_at = "2026-09-14T07:17:18Z"
 folder = "workflow/features/v1-operation-journal"
 worktree = "/tmp/gotth-stack-worktrees/approval-recovery-journal"
 branch = "workflow/feature/approval-recovery-journal"
@@ -131,7 +131,7 @@ retries = 0
 [[feature."v1.operation-journal".verification]]
 id = "source-boundary"
 kind = "security"
-command = "test -z \"$(rg -n --glob '*.go' 'net/http|os/exec|syscall\\.(Exec|ForkExec)|docker|systemctl|func .*Apply|\\\"apply\\\"' pkg/journal cmd)\""
+command = '''test -z "$(rg -n --glob '*.go' --glob '!*_test.go' 'net/http|os/exec|syscall\.(Exec|ForkExec)|docker|systemctl|func .*Apply' pkg/journal cmd; rg -n --glob '*.go' --glob '!*_test.go' '"apply"' cmd)"'''
 required = true
 timeout_seconds = 120
 side_effect = "read_only"

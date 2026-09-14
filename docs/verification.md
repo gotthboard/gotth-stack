@@ -18,7 +18,7 @@
   configuration, capability, and secret-revision binding;
 - exact duplicate idempotency and conflicting-ID rejection;
 - strict installation/head/record parsing and fixed non-disclosing errors;
-- file sync, directory sync, append, truncate, rename, and close failure
+- log/head write, file sync, directory sync, truncate, rename, and close failure
   injection at every durable transition;
 - subprocess lock-contention and crash/reopen tests;
 - partial header and payload recovery only behind the durable head;

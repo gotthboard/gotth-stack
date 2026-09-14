@@ -45,8 +45,9 @@ The manifest binds each component to:
 The normalized manifest sorts components and every set-like field. Its SHA-256
 digest is the desired-state identity. The planner performs a stable
 topological sort and hashes the resulting plan without its own digest field.
-The human-readable source label is inert in V0; a future adapter admission
-layer must validate and retrieve it without treating text as a command.
+The human-readable source label is inert in the plan-kernel workstream; a
+future adapter admission layer must validate and retrieve it without treating
+text as a command.
 The digests detect inconsistent or changed content; they are not signatures
 and do not establish artifact publisher authenticity.
 
@@ -102,8 +103,9 @@ invalid transition is corruption and blocks operation.
 Approval binds the exact plan plus the selected installation, actor assertion,
 authenticated-authority evidence digest, expiry, and secret-slot revision
 digests. Secret material is never copied into the journal. Caller-supplied
-approval, operation, and step IDs are idempotency keys; exact duplicates are
-stable, while conflicting reuse is rejected.
+approval, operation, and step IDs are idempotency keys; mutation idempotency
+digests are unique within an operation. Exact duplicates are stable, while
+conflicting reuse is rejected.
 
 Callers do not supply journal observation times. A controller-owned clock
 records issue, transition, and result times and evaluates approval expiry, so a
@@ -114,10 +116,12 @@ interrupted before its result can be explicitly retried with a higher attempt.
 A mutation is different: its start record is durable before the caller could
 act. If no result follows, restart cannot know whether the external action
 happened. The reconstructed operation therefore becomes `recovery_required`;
-blind retry and ordinary cancellation are forbidden. A rollback step
-explicitly names the mutating step it compensates. Rollback references are
-non-secret digests or explicit recovery-only reason codes, never arbitrary
-commands or payloads.
+blind retry and ordinary cancellation are forbidden. A reconciled durable
+result resolves the unknown outcome; otherwise the operation remains
+explicitly recovery-required. A rollback step names the finished mutating step
+it compensates, including a failed mutation that may have partially changed
+external state. Rollback references are non-secret digests or explicit
+recovery-only reason codes, never arbitrary commands or payloads.
 
 The journal scans linearly during open and retains reconstructed operation
 summaries in memory. The alpha format caps frame and log sizes. This is honest

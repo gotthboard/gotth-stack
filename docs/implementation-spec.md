@@ -21,7 +21,8 @@ canonical package.
   160 bytes.
 - Artifact source: a 1–2048 byte `https` or `oci` URL label with a host and
   path, and without user information, query, fragment, surrounding whitespace,
-  or backslashes. It is an inert label in V0 and is never opened or executed.
+  or backslashes. It is an inert label in the plan-kernel workstream and is
+  never opened or executed.
 - Artifact and configuration digests: lowercase `sha256:` plus 64 hex digits.
 - Components: 1–64. Dependencies/capabilities/secret slots: at most 64 each.
 - Capability: dot-separated lowercase ASCII tokens, at most 160 bytes.
@@ -79,14 +80,15 @@ enumerated phases/modes/outcomes, and sorted secret-slot revision bindings.
 They contain no secret value, command, environment, URL credential, adapter
 payload, or raw rollback material. Returned values are deep copies.
 
-`Create` makes a private journal directory and durable installation identity.
+`Create` makes a private journal directory and durable installation identity,
+syncing both the journal directory and its trusted parent before success.
 `Open` rejects an identity mismatch and takes a nonblocking exclusive Linux
 `flock` on `journal.lock`. One process owns a journal at a time. The lock is
 released by `Close` or process exit.
 
 The public API never accepts an observation timestamp. A journal-owned clock
-records UTC events and checks expiry. Tests inject a private clock through an
-unexported constructor; production callers cannot backdate an operation.
+records UTC events and checks expiry. Same-package tests replace the private
+clock; production callers cannot backdate an operation.
 
 ### Storage format
 
@@ -111,7 +113,9 @@ Frame version 1 is:
 N bytes  compact canonical JSON payload
 ```
 
-Payloads are at most 64 KiB. The log is at most 256 MiB and 262,144 records.
+Payloads are at most 1 MiB so one approval can project every bounded plan
+component without splitting its authority record. The log is at most 512 MiB
+and 262,144 records.
 The fixed record struct is marshaled without maps. Each payload has sequence,
 previous digest, installation ID, timestamp, kind, and one event body. The
 first record has sequence 1 and the all-zero previous digest. Subsequent
@@ -135,24 +139,29 @@ Approval requires `approval_id`, `actor_id`, `authority_digest`, and an
 `expires_at` strictly later than the journal-observed issue time.
 `StartOperation` rejects expired approval,
 installation mismatch, plan mismatch, or reused IDs. Exact duplicate approval
-and operation requests are idempotent.
+and operation requests are idempotent. Step IDs are also idempotency keys, and
+a mutation idempotency digest may name only one step within an operation.
 
 ### Transition rules
 
 Phases are `preflight`, `apply`, `verify`, and `rollback`. Modes are
 `read_only` and `mutation`; apply and rollback require mutation mode, while
 preflight requires read-only mode. One operation has at most one in-flight
-step. Attempts start at one and increase exactly by one for an explicitly
+step. Preflight precedes apply, and no apply step may begin after verification
+begins. Attempts start at one and increase exactly by one for an explicitly
 retried interrupted read-only step.
 
 A mutation start requires an idempotency-key digest and either a
 rollback-reference digest or an enumerated recovery-only reason. If a mutation
 start has no durable finish record, replay reports `recovery_required` and no
 API permits retry or cancellation. An unfinished read-only step reports
-`retry_required`; the caller must append a new attempt before performing it
-again.
+`retry_required`; the caller must append a new attempt for the same step,
+component, and phase before performing it again. It cannot finish the
+interrupted read-only attempt after restart. A mutation may append a
+reconciliation result; the finish record marks that it resolves an interrupted
+mutation so replay reconstructs the same state.
 
-Every rollback step names the successful mutating step it compensates and must
+Every rollback step names the finished mutating step it compensates and must
 use that step's component and rollback-reference digest. Recovery-only
 mutations cannot be reported as rolled back.
 
@@ -166,8 +175,9 @@ in-flight step and before any mutation-start record. `complete` requires no
 in-flight step, no failure, a successful verify step for every approved
 component, and no unresolved mutating step. `rolled_back` requires rollback to
 have started, no in-flight step, no failed rollback step, and a successful
-compensating step for every successful mutation that declared rollback
-available.
+compensating step for every finished mutation that declared rollback
+available. A failed mutation result is conservatively treated as possibly
+partial external work.
 
 ### Filesystem and runtime contract
 

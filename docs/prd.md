@@ -57,9 +57,10 @@ on the `1.0.0-alpha.N` release line while any required workstream is incomplete.
   adapter set, artifact and configuration digests, capability grants, and one
   revision digest for every named secret slot. Secret values have no journal
   representation.
-- `STACK-JRN-003`: Approval and operation IDs are caller-supplied idempotency
-  keys. Repeating the exact request returns the existing durable result;
-  reusing an ID for different content fails closed.
+- `STACK-JRN-003`: Approval, operation, and step IDs are caller-supplied
+  idempotency keys. Mutation idempotency digests are unique within an
+  operation. Repeating the exact request returns the existing durable result;
+  reusing an ID or mutation digest for different content fails closed.
 - `STACK-JRN-004`: Persist every journal transition as a bounded,
   checksum-framed, sequence-numbered, hash-chained record. A successful append
   means the record and its durable head have passed the required file and
@@ -76,14 +77,17 @@ on the `1.0.0-alpha.N` release line while any required workstream is incomplete.
   either a rollback-reference digest or an explicit recovery-only reason.
 - `STACK-JRN-008`: If restart finds a mutating step with no durable result, the
   operation state is `recovery_required`. The journal never authorizes blind
-  retry. An interrupted read-only inspection may be explicitly retried as a new
-  attempt.
+  retry. An interrupted read-only inspection may be explicitly retried as the
+  same step, component, and phase with the next attempt number. A reconciled
+  mutation result resumes from that durable result; an unresolved mutation may
+  instead be terminated as recovery-required.
 - `STACK-JRN-009`: Record step success or failure with a non-secret result
   digest or bounded reason code, the exact failure point, and the transition to
   rollback, rolled-back, complete, cancelled, failed, or recovery-required
-  state. Every rollback step names the successful mutating step it compensates;
-  recovery-only mutations cannot be reported as rolled back. Conflicting
-  duplicate completion fails closed.
+  state. Every rollback step names the finished mutating step it compensates;
+  even a failed mutation result may represent partial external work and must be
+  compensated when a rollback reference exists. Recovery-only mutations cannot
+  be reported as rolled back. Conflicting duplicate completion fails closed.
 - `STACK-JRN-010`: Cancellation is allowed only before mutation begins and
   while no step is in flight. Once mutation may have occurred, resolution must
   be rollback or explicit recovery.
@@ -121,7 +125,7 @@ on the `1.0.0-alpha.N` release line while any required workstream is incomplete.
 - No global administrator that silently inherits every product authority.
 - No Mailu runtime component or adapter. Mailu reference/import compatibility
   remains GOTTH Mail-owned and is not a deployment dependency.
-- No live deployment in V0.
+- No live deployment in the plan-kernel or journal workstreams.
 
 ## Current alpha acceptance
 

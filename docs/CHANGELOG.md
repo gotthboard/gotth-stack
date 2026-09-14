@@ -2,9 +2,28 @@
 
 ## Unreleased
 
+### 2026-09-14 02:17 CDT — Implement the approval and recovery journal
+
+Add the Linux-local `pkg/journal` implementation: private installation
+identity, nonblocking lifetime lock, canonical checksum-framed hash-chain log,
+durable head replacement, exact approval projection, operation and step
+idempotency, strict phase transitions, restart reconstruction, read-only retry,
+mutation reconciliation, rollback compensation, fixed errors, and deep-copy
+public results.
+
+The hostile suite covers filesystem object and permission refusal, subprocess
+locking, every durable append checkpoint, torn tails, stale and corrupt heads,
+checksum/chain/sequence/schema/identity/state corruption, frame/log bounds,
+expiry, duplicate/conflicting requests, phase order, failure points,
+cancellation, unknown mutation outcomes, rollback, and terminal states.
+
+This remains a non-executing `1.0.0-alpha.N` workstream. It adds no adapter,
+apply command, network client, shell, secret retrieval, host mutation,
+deployment, tag, or release.
+
 ### 2026-09-14 01:28 CDT — Define the approval and recovery journal contract
 
-Commit: current commit; hash assigned by Git after commit
+Contract commit: `e6b6e8f`
 
 Affected files:
 

@@ -16,11 +16,11 @@ gotth-stack validate stack.json
 gotth-stack plan stack.json
 ```
 
-The active approval-and-recovery journal workstream records durable authority
-and unknown-outcome state but still executes nothing. There is no `apply`
-command. External mutation remains blocked until the journal, adapter rollback
-contracts, and disposable recovery tests are admitted. A pretty plan or journal
-record is not permission to touch a host.
+The approval-and-recovery journal records durable authority, step intent,
+results, rollback compensation, and unknown-outcome state but still executes
+nothing. There is no `apply` command. External mutation remains blocked until
+adapter rollback contracts and disposable recovery tests are admitted. A
+pretty plan or journal record is not permission to touch a host.
 
 GOTTH Stack uses the product release stages `1.0.0-alpha.N`,
 `1.0.0-beta.N`, `1.0.0-rc.N`, and `1.0.0`. Historical `v0` through `v6`
