@@ -10,5 +10,6 @@ deterministic dependency planner, digest-bound output, and read-only CLI.
 
 This slice does not deploy or inspect a host, load adapters, read secret values,
 or call Docker, systemd, Caddy, Authentik, PostgreSQL, Mailu, DNS, GOTTH Mail,
-or GOTTH Board. Runtime verification and exact admitted commit are recorded in
-the workflow evidence before this entry is considered complete.
+or GOTTH Board. Exact source `baec0ebc089ff09ec2975ec23130aa9f35f60852`
+passed the development-host gates recorded in the workflow evidence. Forgejo
+PR #1 records final review and exact fast-forward admission.
