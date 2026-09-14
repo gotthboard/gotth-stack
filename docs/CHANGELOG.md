@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+### 2026-09-14 — Implement the PostgreSQL runtime adapter slice
+
+Define a component-scoped, digest-pinned PostgreSQL 17 container contract and
+add durable runtime replacement, exact observation/readiness, and
+data-preserving reverse rollback mechanisms. Docker authority remains outside
+the controller CLI; image pulling, secret creation/rotation, SQL migrations,
+backups, data deletion, Authentik, product deployment, and `apply` remain out
+of scope.
+
 ### 2026-09-14 12:40 CDT — Implement the bounded Caddy adapter slice
 
 Split the broad platform-adapter workstream and implement the Caddy child as a

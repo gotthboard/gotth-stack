@@ -189,6 +189,70 @@ install Caddy, edit systemd, retrieve secrets, or expose an `apply` command.
   reconciliation, unexpected-state refusal, rollback, and restart behavior.
   This slice adds no controller `apply` command and touches no live Caddy.
 
+## PostgreSQL runtime adapter requirements
+
+The PostgreSQL adapter manages one PostgreSQL 17 container and its runtime
+identity. It does not own application schemas, migrations, backups, secret
+creation, data deletion, Docker installation, or a controller `apply` command.
+Database contents are durable product state and are never treated as
+rollback scratch.
+
+- `STACK-PG-001`: Bind one root-owned Docker-compatible client executable to
+  its exact SHA-256 digest and the literal local Unix engine endpoint. Accept
+  only private adapter, data, and secret roots with fixed ownership and modes.
+  The controller process must never receive generic Docker-socket authority;
+  production execution belongs behind a separately installed, component-
+  scoped adapter boundary.
+- `STACK-PG-002`: Accept one canonical PostgreSQL 17 specification containing
+  a bounded component ID, digest-pinned image reference, database and bootstrap
+  role identifiers, positive container UID/GID, and one loopback host port.
+  Derive the container, data-directory, and password-file names from the
+  component ID. Bind the canonical specification to the approved
+  configuration digest.
+- `STACK-PG-003`: Bind the password file to the approved secret-revision
+  digest without returning or persisting its bytes. Reject symlinks, hard
+  links, unsafe ownership or modes, empty/oversized/NUL-bearing values, and
+  descriptor substitution.
+- `STACK-PG-004`: Preflight with fixed `docker image inspect` and
+  `docker inspect` calls, bounded output, no shell, and a scrubbed environment.
+  The candidate image must have the exact requested repository digest,
+  `PG_MAJOR=17`, the official entrypoint, and `postgres` command. Existing
+  containers are accepted only when they match the adapter's complete managed
+  shape and labels.
+- `STACK-PG-005`: Before runtime mutation, durably stage canonical candidate
+  and optional previous specifications, image identities, engine identity,
+  previous running state, secret identity/revision, and data-directory
+  identity. Exact duplicate staging is idempotent; conflicting operation-ID
+  reuse fails closed.
+- `STACK-PG-006`: Create containers only from package-built arguments: exact
+  image digest, derived name, nonroot UID/GID, read-only root filesystem, all
+  capabilities dropped, no-new-privileges, bounded noexec temporary filesystems,
+  one loopback PostgreSQL port, one data bind, and one read-only password bind.
+  No caller supplies arguments, environment entries, labels, or mounts.
+- `STACK-PG-007`: Expose stop, preserve-previous-name, create, start, verify,
+  and rollback operations separately so the journal can record every possible
+  external effect before execution. Repetition succeeds only for the exact
+  staged state; any third state requires recovery.
+- `STACK-PG-008`: Verify exact effective container inspection plus fixed
+  in-container `pg_isready` and read-only `psql` identity queries. Successful
+  process exit alone is not readiness. Observation reports only enums and
+  digests and distinguishes the primary and rollback container names.
+- `STACK-PG-009`: Upgrade and rollback may replace only an adapter-managed
+  PostgreSQL 17 runtime while preserving the same database, role, UID/GID,
+  port, data directory, and secret revision. Rollback restores the previous
+  container runtime. For a fresh install it removes the candidate container
+  but deliberately preserves initialized data; it never claims data rollback.
+- `STACK-PG-010`: Every public failure is a fixed sentinel class. Context,
+  limit, executable, image, engine, container, secret, storage, conflict, and
+  recovery failures remain distinguishable without disclosing paths, command
+  output, configuration, image names, container names, or secret material.
+- `STACK-PG-011`: Hostile unit tests and a disposable real PostgreSQL 17 test
+  prove fresh create/start/reopen/verify/rollback, same-major replacement and
+  reverse rollback, idempotency, interruption observation, unexpected-state
+  refusal, data preservation, fixed process arguments, and source boundaries.
+  No live container, data directory, Docker policy, or controller authority is
+  changed by this feature.
+
 ## Downstream product requirements
 
 - Preview/apply bound to exact actor, plan digest, expiry, target installation,

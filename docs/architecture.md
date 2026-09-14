@@ -36,6 +36,12 @@ runtime activation, observation, and rollback calls remain separate so the
 existing journal can record each effect before execution. No controller or CLI
 invocation path exists yet.
 
+The second mechanism is the private PostgreSQL runtime adapter described in
+`postgresql-adapter-architecture.md`. It controls only one derived,
+digest-pinned PostgreSQL 17 container through fixed local-engine operations.
+It preserves database bytes across runtime rollback and does not grant the
+controller process Docker-socket access.
+
 ## Manifest and plan identity
 
 The manifest binds each component to:

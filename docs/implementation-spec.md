@@ -239,6 +239,16 @@ format, atomic file sequence, runtime-digest observation, and rollback model
 are specified in `caddy-adapter-implementation-spec.md`. It is not imported by
 `cmd/gotth-stack`; admission of this package does not create an apply command.
 
+## PostgreSQL runtime adapter
+
+The private `internal/adapters/postgresql` package owns the exact API, bounds,
+fixed Docker calls, durable transaction format, effective-container
+inspection, readiness probes, runtime replacement, observation, and reverse
+rollback specified in `postgresql-adapter-implementation-spec.md`. The
+controller CLI does not import it. The package never pulls images, creates or
+deletes secrets, deletes data, applies SQL migrations, changes Docker policy,
+or exposes an `apply` command.
+
 ## Public website
 
 Canonical executable: `cmd/gotthstack-web`.
