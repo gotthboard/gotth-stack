@@ -27,7 +27,7 @@ func TestHomeCompleteWithoutJavaScript(t *testing.T) {
 		"HTMX adds interaction",
 		"There is deliberately no apply command yet",
 		"href=\"/principles?topic=trust\"",
-		"href=\"https://github.com/gotthboard/gotth-stack\"",
+		"href=\"https://github.com/gotthboard\"",
 		"View on GitHub",
 	} {
 		if !strings.Contains(body, required) {
@@ -37,8 +37,11 @@ func TestHomeCompleteWithoutJavaScript(t *testing.T) {
 	if count := strings.Count(body, "<main "); count != 1 {
 		t.Errorf("main landmark count = %d, want 1", count)
 	}
-	if count := strings.Count(body, "href=\"https://github.com/gotthboard/gotth-stack\""); count != 1 {
+	if count := strings.Count(body, "href=\"https://github.com/gotthboard\""); count != 1 {
 		t.Errorf("GitHub source link count = %d, want 1", count)
+	}
+	if strings.Contains(body, "href=\"https://github.com/gotthboard/gotth-stack\"") {
+		t.Error("GitHub source link targets the repository instead of the organization")
 	}
 	if strings.Contains(body, "style=") || strings.Contains(body, "<script>") {
 		t.Error("page contains inline style or script")

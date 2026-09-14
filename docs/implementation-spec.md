@@ -237,8 +237,8 @@ Canonical executable: `cmd/gotthstack-web`.
 
 Canonical private package: `internal/site`.
 
-Canonical public source URL:
-`https://github.com/gotthboard/gotth-stack`. The complete landing page renders
+Canonical public organization URL:
+`https://github.com/gotthboard`. The complete landing page renders
 this as an ordinary anchor; it is not a server-side network dependency.
 
 Pinned build inputs are Go 1.26.6, templ 0.3.1020, Node 26.7.0, npm 12.0.2,

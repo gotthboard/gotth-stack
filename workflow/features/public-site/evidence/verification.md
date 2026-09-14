@@ -4,7 +4,7 @@ Date: 2026-09-14
 
 Base commit: `98b16f7fca0d01dc90282e1ed8fba84adc7bca3a`
 
-Candidate source-state SHA-256: `6227e2c1de2850b5abf0d4f461c74a795cefb9353ca1217131efcb1e87de7479`
+Candidate source-state SHA-256: `5a3409159ed8f169569c0d56ee2bcebe495bde384a4057a34c4961f61d931cd2`
 
 The source-state hash covers the exact staged full-index binary diff from base
 commit `98b16f7fca0d01dc90282e1ed8fba84adc7bca3a`. It excludes review/evidence
@@ -29,8 +29,8 @@ the global coverage map), and ignored scratch.
   equality, exact CSS content-address check, formatting, controller-import and
   side-effect scans, vet, focused race tests, coverage, and web build.
 - The complete-page handler test requires exactly one ordinary anchor to
-  `https://github.com/gotthboard/gotth-stack` with visible
-  `View on GitHub` text.
+  `https://github.com/gotthboard` with visible
+  `View on GitHub` text and rejects the repository-specific destination.
 - `WEB_EVIDENCE_DIR=/tmp/gotthstack-web-evidence
   scripts/verify-web-browser.sh`: process start/readiness/termination, complete
   HTML, HTMX fragment, JavaScript-disabled complete page, 1440x1100 capture,
@@ -49,6 +49,10 @@ the global coverage map), and ignored scratch.
   formatting, full vet, uncached race/coverage tests, all command builds,
   controller example validation/planning, the import boundary, and the exact
   `ab3aa925...` CSS content digest after the source-link change.
+- The owner-directed organization-link correction passed deterministic
+  generation, focused race/coverage/build, desktop/mobile/no-JS browser
+  rendering, dependency audit, and a fresh full-repository Go 1.26.6
+  development-host vet/race/build regression.
 
 Development-host uncached race coverage:
 

@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+### 2026-09-14 09:27 CDT — Point the source link at the organization
+
+Change the landing-page GitHub destination from the single repository to the
+`gotthboard` organization. The exact-link test also rejects regression to the
+repository-specific destination.
+
 ### 2026-09-14 09:00 CDT — Link the landing page to its public source
 
 Replace the final internal call-to-action with one ordinary link to the

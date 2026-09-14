@@ -110,7 +110,7 @@ receiving any deployment authority.
 - `STACK-SITE-001`: `GET /` returns one complete server-rendered landing page
   that identifies Go, templ, Tailwind CSS, and HTMX and accurately describes
   the controller's current alpha boundary. Its source call-to-action links to
-  the canonical public GitHub repository. `HEAD /` returns the same status and
+  the canonical public GitHub organization. `HEAD /` returns the same status and
   headers without a body.
 - `STACK-SITE-002`: The page remains readable, navigable, and complete when
   JavaScript is unavailable. HTMX may enhance the principles explorer but may

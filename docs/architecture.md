@@ -213,7 +213,7 @@ while an ordinary request receives the full page with the same selection.
 Unknown input is not echoed.
 
 The source call-to-action is one ordinary anchor to the canonical public
-GitHub repository. The server does not fetch GitHub, proxy it, or depend on it
+GitHub organization. The server does not fetch GitHub, proxy it, or depend on it
 for page rendering.
 
 CSS and the pinned HTMX distribution are compiled or copied into the private
