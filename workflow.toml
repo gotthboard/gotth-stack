@@ -93,7 +93,7 @@ branch = "workflow/feature/approval-recovery-journal"
 scope = ["Installation identity", "Exact approval binding", "Durable checksum and hash-chain journal", "Crash and torn-tail recovery", "Corruption refusal", "Read-only retry", "Unknown mutation outcome", "Cancellation and rollback state"]
 non_goals = ["Concrete platform adapter", "Live production apply", "Web UI"]
 affected_files = ["pkg/**", "cmd/**", "docs/**", "workflow/**", "workflow.toml", "workflow.events.jsonl"]
-invariants = ["Historical v1 in this feature ID is a workstream label not a product version", "No mutation starts without durable intent and exact approval", "Secret values have no journal representation", "Unknown mutation outcomes never retry or cancel blindly", "Corrupt committed state is never truncated into apparent health", "No apply or adapter path exists"]
+invariants = ["Historical v1 in this feature ID is a workstream label not a product version", "No mutation starts without durable intent and exact approval", "One approval binds exactly one operation ID", "Secret values have no journal representation", "Unknown mutation outcomes never retry or cancel blindly", "Corrupt committed state is never truncated into apparent health", "No apply or adapter path exists"]
 acceptance = ["STACK-JRN-001 through STACK-JRN-012 trace to code tests and evidence", "Crash-point and filesystem-failure tests prove recoverable state transitions", "Exact duplicate requests are idempotent and conflicting ID reuse fails closed", "Race repeat shuffle fuzz coverage clean-clone and two cold reviews pass", "Source scan proves no apply adapter network shell Docker or systemd path"]
 
 [feature."v1.operation-journal".rollback]

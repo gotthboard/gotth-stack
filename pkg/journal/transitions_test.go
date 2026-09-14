@@ -52,6 +52,9 @@ func TestDuplicateAndConflictingRequests(t *testing.T) {
 	if _, err := journal.StartOperation(OperationInput{ID: operation.ID, ApprovalID: "other", PlanDigest: plan.Digest}); !errors.Is(err, ErrConflict) {
 		t.Fatalf("conflicting operation error=%v", err)
 	}
+	if _, err := journal.StartOperation(OperationInput{ID: "operation-b", ApprovalID: "approval-a", PlanDigest: plan.Digest}); !errors.Is(err, ErrConflict) {
+		t.Fatalf("approval replay error=%v", err)
+	}
 	input := StepInput{OperationID: operation.ID, StepID: "preflight-database", ComponentID: "database", Phase: PhasePreflight, Mode: ModeReadOnly, Attempt: 1}
 	if _, err := journal.BeginStep(input); err != nil {
 		t.Fatal(err)

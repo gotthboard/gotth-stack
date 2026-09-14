@@ -22,7 +22,9 @@ plan proof showed that the complete bounded approval projection exceeds the
 smaller limit. It also validates the opened lock/log descriptors, removes a
 create-time corrupt-directory leak, permits operator rollback without a
 fabricated failure, and forbids ordinary terminal failure after mutation may
-have left external state live.
+have left external state live. A subsequent authority review made approvals
+single-operation capabilities so a fresh operation ID cannot replay one human
+approval.
 
 This remains a non-executing `1.0.0-alpha.N` workstream. It adds no adapter,
 apply command, network client, shell, secret retrieval, host mutation,

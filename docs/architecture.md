@@ -104,8 +104,8 @@ Approval binds the exact plan plus the selected installation, actor assertion,
 authenticated-authority evidence digest, expiry, and secret-slot revision
 digests. Secret material is never copied into the journal. Caller-supplied
 approval, operation, and step IDs are idempotency keys; mutation idempotency
-digests are unique within an operation. Exact duplicates are stable, while
-conflicting reuse is rejected.
+digests are unique within an operation. One approval binds exactly one
+operation ID. Exact duplicates are stable, while conflicting reuse is rejected.
 
 Callers do not supply journal observation times. A controller-owned clock
 records issue, transition, and result times and evaluates approval expiry, so a

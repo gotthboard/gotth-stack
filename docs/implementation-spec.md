@@ -137,10 +137,11 @@ manifest file.
 
 Approval requires `approval_id`, `actor_id`, `authority_digest`, and an
 `expires_at` strictly later than the journal-observed issue time.
-`StartOperation` rejects expired approval,
-installation mismatch, plan mismatch, or reused IDs. Exact duplicate approval
-and operation requests are idempotent. Step IDs are also idempotency keys, and
-a mutation idempotency digest may name only one step within an operation.
+`StartOperation` rejects expired approval, installation mismatch, plan
+mismatch, reused IDs, or an approval already bound to another operation. Exact
+duplicate approval and operation requests are idempotent. Step IDs are also
+idempotency keys, and a mutation idempotency digest may name only one step
+within an operation.
 
 ### Transition rules
 

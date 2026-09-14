@@ -59,8 +59,9 @@ on the `1.0.0-alpha.N` release line while any required workstream is incomplete.
   representation.
 - `STACK-JRN-003`: Approval, operation, and step IDs are caller-supplied
   idempotency keys. Mutation idempotency digests are unique within an
-  operation. Repeating the exact request returns the existing durable result;
-  reusing an ID or mutation digest for different content fails closed.
+  operation. One approval authorizes exactly one operation ID. Repeating the
+  exact request returns the existing durable result; reusing an approval, ID,
+  or mutation digest for different content fails closed.
 - `STACK-JRN-004`: Persist every journal transition as a bounded,
   checksum-framed, sequence-numbered, hash-chained record. A successful append
   means the record and its durable head have passed the required file and

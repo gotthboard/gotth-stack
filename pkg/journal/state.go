@@ -59,6 +59,11 @@ func (journal *Journal) applyOperation(input operationRecord, observedAt time.Ti
 		}
 		return ErrConflict
 	}
+	for _, existing := range journal.operations {
+		if existing.ApprovalID == input.ApprovalID {
+			return ErrConflict
+		}
+	}
 	journal.operations[input.ID] = &Operation{
 		SchemaVersion: SchemaVersion, ID: input.ID, InstallationID: journal.installationID,
 		ApprovalID: input.ApprovalID, PlanDigest: input.PlanDigest, StartedAt: observedAt,
