@@ -6,7 +6,8 @@ Postfix, Dovecot, Rspamd, and GOTTH Board through separate, least-privilege
 adapters while keeping provider-specific mechanisms in independent
 `gotth-extension-*` repositories.
 
-The admitted V0 slice is deliberately non-mutating. It validates a strict,
+The admitted plan kernel (historical workflow ID `v0.plan-kernel`) is
+deliberately non-mutating. It validates a strict,
 secret-free stack manifest and renders a deterministic, digest-bound deployment
 plan:
 
@@ -15,9 +16,15 @@ gotth-stack validate stack.json
 gotth-stack plan stack.json
 ```
 
-There is no `apply` command yet. External mutation remains blocked until the
-durable journal, confirmation binding, adapter rollback contract, and recovery
-tests are admitted. A pretty plan is not permission to touch a host.
+The active approval-and-recovery journal workstream records durable authority
+and unknown-outcome state but still executes nothing. There is no `apply`
+command. External mutation remains blocked until the journal, adapter rollback
+contracts, and disposable recovery tests are admitted. A pretty plan or journal
+record is not permission to touch a host.
+
+GOTTH Stack uses the product release stages `1.0.0-alpha.N`,
+`1.0.0-beta.N`, `1.0.0-rc.N`, and `1.0.0`. Historical `v0` through `v6`
+workflow IDs name internal workstreams, not product versions.
 
 ## Boundaries
 

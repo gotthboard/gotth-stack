@@ -2,6 +2,48 @@
 
 ## Unreleased
 
+### 2026-09-14 01:28 CDT — Define the approval and recovery journal contract
+
+Commit: current commit; hash assigned by Git after commit
+
+Affected files:
+
+- `README.md`
+- `docs/prd.md`
+- `docs/architecture.md`
+- `docs/implementation-spec.md`
+- `docs/feature-plan.md`
+- `docs/verification.md`
+- `docs/traceability.md`
+- `workflow.toml`
+- `workflow/features/v1-operation-journal/README.md`
+- `workflow/artifacts/global-coverage-map.md`
+- `workflow.events.jsonl`
+
+Explanation:
+
+Replace the vague journal placeholder with stable `STACK-JRN-001` through
+`STACK-JRN-012` requirements, the Linux file/directory synchronization and
+locking contract, exact approval and secret-revision binding, bounded framed
+storage, duplicate-request idempotency, replay, corruption refusal,
+cancellation limits, rollback metadata, and explicit unknown mutation outcome.
+Clarify that historical `v0` through `v6` workflow IDs are internal labels;
+the product remains on the `1.0.0-alpha.N` release line.
+
+Verification:
+
+- `git diff --check -- .`
+- `go test -mod=readonly ./...`
+- `go vet -mod=readonly ./...`
+- direct review of Go 1.26.6 `os.File.Sync`/`os.Rename` documentation and Linux
+  7.1 `fsync(2)`, `rename(2)`, and `flock(2)` contracts
+
+Risks / non-goals:
+
+- This commit defines the contract only. It adds no journal implementation,
+  adapter, apply command, secret handling, network call, deployment, tag, or
+  release.
+
 ### 2026-09-14 — Correct the GOTTH Mail runtime topology
 
 Remove the false Mailu runtime dependency from the README, PRD, architecture,

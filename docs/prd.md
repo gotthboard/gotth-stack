@@ -23,28 +23,79 @@ front/proxy, Postfix, Dovecot, Rspamd, and GOTTH Board. Provider-specific work
 such as GoDaddy DNS remains in an independent `gotth-extension-<slug>`
 repository.
 
-## V0 requirements
+## Plan-kernel requirements
 
-- `STACK-V0-001`: Parse at most one MiB of strict JSON with no unknown fields,
+The historical workflow ID `v0.plan-kernel` predates the release-stage naming
+rule. It is an internal workstream, not a product version. GOTTH Stack remains
+on the `1.0.0-alpha.N` release line while any required workstream is incomplete.
+
+- `STACK-PLAN-001`: Parse at most one MiB of strict JSON with no unknown fields,
   duplicate object names, trailing values, or nesting deeper than 32 levels.
-- `STACK-V0-002`: Model one named stack containing 1–64 components. Each
+- `STACK-PLAN-002`: Model one named stack containing 1–64 components. Each
   component declares a bounded ID, adapter identity, immutable artifact source
   plus SHA-256 digest, configuration SHA-256 digest, dependencies, requested
   capabilities, and named secret slots. Secret values have no representation.
-- `STACK-V0-003`: Reject missing, duplicate, self, and cyclic dependencies;
+- `STACK-PLAN-003`: Reject missing, duplicate, self, and cyclic dependencies;
   reject duplicate capabilities and secret slots.
-- `STACK-V0-004`: Produce a deterministic dependency-ordered plan and SHA-256
+- `STACK-PLAN-004`: Produce a deterministic dependency-ordered plan and SHA-256
   identities independent of manifest list ordering.
-- `STACK-V0-005`: Rejection errors never interpolate manifest values. Plans
+- `STACK-PLAN-005`: Rejection errors never interpolate manifest values. Plans
   display accepted non-secret identifiers and digests, while secret values have
   no schema representation.
-- `STACK-V0-006`: Expose only `validate` and `plan` CLI operations. V0 performs
+- `STACK-PLAN-006`: Expose only `validate` and `plan` CLI operations. The plan
+  kernel performs
   no network, process, filesystem mutation, host inspection, or apply action.
 
-## Planned product requirements
+## Approval and recovery journal requirements
 
-- Durable, fsync-backed operation journal and recovery after interruption or
-  unknown outcomes.
+- `STACK-JRN-001`: Create or reopen exactly one stable installation identity
+  in a private local journal directory. Reject symlinks, non-regular journal
+  files, identity mismatch, unsupported storage format, and concurrent writers.
+- `STACK-JRN-002`: Record an explicit approval before any operation. Approval
+  binds the installation ID, actor ID, authenticated-authority evidence digest,
+  issue and expiry times, exact manifest and plan digests, ordered component and
+  adapter set, artifact and configuration digests, capability grants, and one
+  revision digest for every named secret slot. Secret values have no journal
+  representation.
+- `STACK-JRN-003`: Approval and operation IDs are caller-supplied idempotency
+  keys. Repeating the exact request returns the existing durable result;
+  reusing an ID for different content fails closed.
+- `STACK-JRN-004`: Persist every journal transition as a bounded,
+  checksum-framed, sequence-numbered, hash-chained record. A successful append
+  means the record and its durable head have passed the required file and
+  directory synchronization steps.
+- `STACK-JRN-005`: Reconstruct operation state only from validated durable
+  records. Reject checksum, sequence, hash-chain, schema, identity, head, size,
+  and state-machine corruption without returning a partial trusted view.
+- `STACK-JRN-006`: Recover only an incomplete uncommitted tail whose durable
+  head still names the preceding valid record. Never truncate or bless a fully
+  framed corrupt record, a missing committed prefix, or a head that points past
+  the validated log.
+- `STACK-JRN-007`: Before a future adapter may perform a mutating step, record
+  its operation, phase, component, stable step ID, attempt, idempotency key, and
+  either a rollback-reference digest or an explicit recovery-only reason.
+- `STACK-JRN-008`: If restart finds a mutating step with no durable result, the
+  operation state is `recovery_required`. The journal never authorizes blind
+  retry. An interrupted read-only inspection may be explicitly retried as a new
+  attempt.
+- `STACK-JRN-009`: Record step success or failure with a non-secret result
+  digest or bounded reason code, the exact failure point, and the transition to
+  rollback, rolled-back, complete, cancelled, failed, or recovery-required
+  state. Every rollback step names the successful mutating step it compensates;
+  recovery-only mutations cannot be reported as rolled back. Conflicting
+  duplicate completion fails closed.
+- `STACK-JRN-010`: Cancellation is allowed only before mutation begins and
+  while no step is in flight. Once mutation may have occurred, resolution must
+  be rollback or explicit recovery.
+- `STACK-JRN-011`: Journal errors are fixed sentinel errors and never disclose
+  actor values, manifest content, paths, secret-slot revisions, rollback
+  references, or stored record payloads.
+- `STACK-JRN-012`: This workstream adds no `apply` CLI, adapter invocation,
+  network access, shell, Docker/systemd call, secret retrieval, or live host
+  mutation. It provides durable authority evidence and recovery state only.
+
+## Downstream product requirements
+
 - Preview/apply bound to exact actor, plan digest, expiry, target installation,
   adapter set, artifacts, configuration digests, capabilities, and secret-slot
   revisions.
@@ -72,10 +123,17 @@ repository.
   remains GOTTH Mail-owned and is not a deployment dependency.
 - No live deployment in V0.
 
-## V0 acceptance
+## Current alpha acceptance
 
 - Strict parsing, validation, graph, determinism, redaction, CLI, fuzz, race,
   and clean-clone gates pass.
 - Independent consumer code can import `pkg/stack`.
 - Source and review prove the complete absence of an apply or arbitrary-command
   path.
+- Approval/recovery tests prove exact binding, duplicate-request idempotency,
+  expiry, durable ordering, torn-tail recovery, corruption refusal,
+  cross-process writer exclusion, filesystem-failure propagation, restart
+  replay, cancellation limits, rollback metadata, and unknown-outcome handling.
+- A source scan proves the journal adds no adapter invocation or live mutation
+  path. `apply` remains absent until downstream adapter contracts and disposable
+  integration proofs are admitted.

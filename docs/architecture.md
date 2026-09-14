@@ -26,7 +26,7 @@ component-specific target and capability grant needed for one operation. They
 do not receive another component's secrets, administrator session, database,
 or rollback state.
 
-V0 implements only the upper-left planning boundary. It parses a secret-free
+The admitted plan kernel implements only the upper-left planning boundary. It parses a secret-free
 manifest, normalizes unordered declarations, validates the dependency graph,
 and emits a deterministic plan. It does not load adapters or inspect a host.
 
@@ -61,11 +61,88 @@ and do not establish artifact publisher authenticity.
   that the operator is being asked to approve.
 - Repeated validation or planning is side-effect free and byte-identical.
 
-Future apply cannot simply call adapters in a loop. It requires a durable
-journal written before each transition, an exact approval binding, adapter
-preflight and recovery contracts, and an explicit unknown-outcome state. If
-rollback cannot be proven, the UI must say so instead of fabricating a green
-button.
+Future apply cannot simply call adapters in a loop. It requires the approval
+and recovery journal below, adapter preflight and recovery contracts, and an
+explicit unknown-outcome state. If rollback cannot be proven, the UI must say
+so instead of fabricating a green button.
+
+## Approval and recovery journal
+
+The journal is a Linux-local authority record, not an adapter executor. One
+opened journal owns an advisory exclusive lock for its lifetime. Its directory
+contains only a stable installation identity, an append-only framed log, a
+small durable head checkpoint, and the lock file. The directory and files are
+private to the controller account; symlinks and unexpected file types are
+rejected.
+
+Each record contains a schema version, monotonically increasing sequence,
+previous-record digest, controller-observed UTC time, installation ID, event
+kind, and one strictly validated event payload. The frame carries a fixed magic/version,
+bounded payload length, and SHA-256 payload checksum. The payload digest is the
+next record's chain link. Time is evidence only; sequence and hashes establish
+ordering because wall clocks can move backward.
+
+Append durability is deliberately expensive and explicit:
+
+1. validate the transition against the reconstructed state;
+2. append the complete frame to the locked log;
+3. `fsync` the log;
+4. write and `fsync` a replacement head in the same directory;
+5. atomically rename the head into place; and
+6. `fsync` the containing directory.
+
+Success is not returned before all six steps succeed. Failure leaves the
+caller without authority to act. On reopen, a partial final frame may be
+discarded only when the durable head still identifies the preceding valid
+record. A valid extra frame after an older head represents a crash between log
+and head synchronization and may repair the head forward. A head ahead of the
+log, a fully framed checksum failure, a chain break, a sequence gap, or an
+invalid transition is corruption and blocks operation.
+
+Approval binds the exact plan plus the selected installation, actor assertion,
+authenticated-authority evidence digest, expiry, and secret-slot revision
+digests. Secret material is never copied into the journal. Caller-supplied
+approval, operation, and step IDs are idempotency keys; exact duplicates are
+stable, while conflicting reuse is rejected.
+
+Callers do not supply journal observation times. A controller-owned clock
+records issue, transition, and result times and evaluates approval expiry, so a
+request cannot revive an expired approval by backdating an operation.
+
+The journal distinguishes read-only inspection from mutation. An inspection
+interrupted before its result can be explicitly retried with a higher attempt.
+A mutation is different: its start record is durable before the caller could
+act. If no result follows, restart cannot know whether the external action
+happened. The reconstructed operation therefore becomes `recovery_required`;
+blind retry and ordinary cancellation are forbidden. A rollback step
+explicitly names the mutating step it compensates. Rollback references are
+non-secret digests or explicit recovery-only reason codes, never arbitrary
+commands or payloads.
+
+The journal scans linearly during open and retains reconstructed operation
+summaries in memory. The alpha format caps frame and log sizes. This is honest
+and auditable for initial deployments; segmentation or indexing is deferred
+until measured operation history justifies it.
+
+## Operation state machine
+
+```text
+approved -> preflighting -> applying -> verifying -> complete
+    |             |             |            |
+    +-> cancelled +-> failed ---+------------+
+                                  \
+                                   -> rolling_back -> rolled_back
+                                   -> recovery_required
+```
+
+Only one step may be in flight per operation. Cancellation is legal only
+before any mutation starts. Failure records preserve the exact phase,
+component, step, attempt, and bounded reason code. Rollback is a separate
+phase with the same write-before-effect and unknown-outcome rules.
+
+The journal does not claim to authenticate actors itself. It records the exact
+actor assertion and authority-evidence digest presented by the future
+authenticated controller boundary. That boundary remains downstream.
 
 ## Integration boundaries
 
