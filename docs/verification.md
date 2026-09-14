@@ -9,7 +9,8 @@
 - fuzz targets for strict parsing and graph planning;
 - repeated and shuffled test runs;
 - independent external-package consumer compile;
-- source scan proving no apply/exec/network/Docker/systemd path;
+- source scan proving no apply/exec/network/Docker/systemd path in the plan
+  kernel or controller CLI;
 - two cold review passes before admission.
 
 ## Approval and recovery journal gates
@@ -45,3 +46,23 @@ rollback or honest recovery-required reporting, and disposable end-to-end
 deployment for each supported topology.
 
 No live host is a valid plan-kernel or journal test target.
+
+## Public website gates
+
+- reproducible templ, Tailwind CSS, and HTMX asset generation with pinned
+  tools and no generated diff;
+- Go formatting, vet, race, coverage, and build gates;
+- exact route, method, content type, cache, browser-security, health, HTMX
+  fragment, full-page fallback, canonical GitHub source-link, and hostile topic
+  tests;
+- source/import scan proving the public site has no controller, journal,
+  adapter, process-exec, secret, tracking, cookie, or outbound-network path;
+- external-process start, readiness, response, and graceful-termination smoke;
+- narrow and wide headless-browser captures, semantic landmark inspection,
+  keyboard-focus inspection, and a JavaScript-disabled full-page check;
+- cold diff review before admission.
+
+The site is performance-insensitive at current scale: it renders a fixed page
+and scans three fixed principle records. Verification records response
+allocations and benchmark distributions to catch accidental template or asset
+regressions; no speedup claim is made.

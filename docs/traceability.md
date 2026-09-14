@@ -30,3 +30,14 @@ honors flushes after reporting success. Evidence proves GOTTH Stack issues and
 checks the documented Linux/Go synchronization operations in the required
 order. Power-loss proof on every supported production filesystem remains a
 downstream release gate.
+
+## Public website
+
+| Requirement | Design / specification | Planned implementation | Verification contract | Status |
+| --- | --- | --- | --- | --- |
+| `STACK-SITE-001` | public website boundary, source link, and route table | `internal/site`, `cmd/gotthstack-web` | handler source-link assertion and external-process smoke tests | verified candidate `6227e2c1` |
+| `STACK-SITE-002` | HTMX enhancement boundary | page and principles templates | full-page and fragment parity tests; no-script browser check | verified candidate `6227e2c1` |
+| `STACK-SITE-003` | fixed topic selection | principles handler | allowlist, duplicate, missing, and reflected-input negative tests | verified candidate `6227e2c1` |
+| `STACK-SITE-004` | embedded asset and browser-security contract | embedded static package and middleware | asset bytes, cache, CSP, and security-header tests | verified candidate `6227e2c1` |
+| `STACK-SITE-005` | semantic and responsive page contract | templ markup and Tailwind source | markup assertions plus narrow/wide browser captures | verified candidate `6227e2c1` |
+| `STACK-SITE-006` | health, method, shutdown, and timeout contract | mux and command | route/method tests, race test, and subprocess termination smoke | verified candidate `6227e2c1` |

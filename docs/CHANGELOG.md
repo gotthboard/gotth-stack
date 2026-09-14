@@ -2,6 +2,51 @@
 
 ## Unreleased
 
+### 2026-09-14 09:00 CDT — Link the landing page to its public source
+
+Replace the final internal call-to-action with one ordinary link to the
+canonical public GitHub repository. The handler test fixes the exact URL and
+requires it to appear once. The server still performs no outbound request and
+the complete page remains usable without JavaScript.
+
+### 2026-09-14 07:53 CDT — Build the gotthstack.com public website
+
+Commit: current commit; hash assigned by Git after commit
+
+Affected files:
+
+- `cmd/gotthstack-web/**`
+- `internal/site/**`
+- `assets/**`
+- generated web assets
+- project build and dependency manifests
+- product, architecture, implementation, workflow, traceability, and
+  verification records
+
+Explanation:
+
+Add a deliberately separate public website built with Go, templ, Tailwind CSS,
+and HTMX. The site explains both the four-tool web stack and the current
+non-mutating controller boundary, provides a progressively enhanced principles
+explorer, and embeds every runtime asset. It does not import the controller or
+journal and cannot acquire deployment authority.
+
+Verification:
+
+- Pinned double-generation and exact CSS content-address checks.
+- Focused and full-repository vet, race, coverage, and build gates with Go
+  1.26.6.
+- Real HTMX click/focus/history check plus wide, narrow, and JavaScript-disabled
+  Chromium checks.
+- Strict route, browser-security, import/side-effect, dependency-audit, and
+  benchmark evidence in `workflow/features/public-site/evidence/`.
+
+Risks / non-goals:
+
+- No deployment machinery, DNS API, runtime Caddy configuration, account flow,
+  analytics, cookie, contact persistence, administrator UI, controller
+  mutation, tag, or release.
+
 ### 2026-09-14 02:17 CDT — Implement the approval and recovery journal
 
 Add the Linux-local `pkg/journal` implementation: private installation

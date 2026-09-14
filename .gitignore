@@ -1,5 +1,7 @@
 coverage.out
 /gotth-stack
+/gotthstack-web
+/node_modules/
 .worker-locks/
 .worker-notes/
 .worker-evidence/

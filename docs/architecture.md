@@ -185,3 +185,43 @@ identity wiring, but that ordering does not create a runtime availability
 dependency. Postfix delivery, Dovecot access/lookup, and Rspamd decisions must
 continue when Authentik is unavailable. A shared mail runtime may host multiple
 domains, with per-domain DNS, DKIM, TLS, policy, alias, and mailbox state.
+
+## Public website boundary
+
+```text
+browser
+  |
+  +-- GET / --------------------> templ page render
+  +-- GET /principles ----------> allowlisted templ fragment or full page
+  +-- GET /static/<versioned> --> embedded immutable asset
+  +-- GET /healthz -------------> fixed readiness response
+
+gotthstack-web -X-> pkg/stack, pkg/journal, adapters, secrets, host mutation
+```
+
+The public site is a separate executable with a private HTTP package. Its
+handler depends only on compiled templates and embedded public assets. It does
+not share the controller CLI, journal, process state, or future authenticated
+administrator boundary. This separation is structural and covered by an
+import-boundary test; marketing copy cannot become an authority path by
+accident.
+
+One route renders the complete page. The principles route selects one of three
+compiled entries by a fixed key. `HX-Request: true` changes only the response
+shape, never authorization or content availability: HTMX receives a fragment,
+while an ordinary request receives the full page with the same selection.
+Unknown input is not echoed.
+
+The source call-to-action is one ordinary anchor to the canonical public
+GitHub repository. The server does not fetch GitHub, proxy it, or depend on it
+for page rendering.
+
+CSS and the pinned HTMX distribution are compiled or copied into the private
+static package and embedded with `go:embed`. The server does not need a runtime
+Node installation, template compiler, filesystem asset directory, database,
+or network dependency. HTML responses are non-cacheable; versioned static
+routes are immutable.
+
+The command constructs `http.Server` with explicit header, read, write, and
+idle timeouts. `SIGINT` and `SIGTERM` initiate a bounded graceful shutdown.
+Handler failures are fixed responses and do not expose request data.

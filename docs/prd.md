@@ -101,6 +101,39 @@ on the `1.0.0-alpha.N` release line while any required workstream is incomplete.
   network access, shell, Docker/systemd call, secret retrieval, or live host
   mutation. It provides durable authority evidence and recovery state only.
 
+## Public website requirements
+
+The public `gotthstack.com` site is an informational application, not the
+controller's future administrator UI. It uses the GOTTH web stack without
+receiving any deployment authority.
+
+- `STACK-SITE-001`: `GET /` returns one complete server-rendered landing page
+  that identifies Go, templ, Tailwind CSS, and HTMX and accurately describes
+  the controller's current alpha boundary. Its source call-to-action links to
+  the canonical public GitHub repository. `HEAD /` returns the same status and
+  headers without a body.
+- `STACK-SITE-002`: The page remains readable, navigable, and complete when
+  JavaScript is unavailable. HTMX may enhance the principles explorer but may
+  not gate content or navigation.
+- `STACK-SITE-003`: `GET /principles` accepts only the documented topic
+  allowlist. HTMX requests receive the selected fragment; ordinary browser
+  requests receive the complete page with the selected topic. Unknown topics
+  fail with `404` and no reflected input.
+- `STACK-SITE-004`: CSS and HTMX are versioned, embedded assets served from the
+  binary. Public assets use immutable caching; HTML is not stored. Every route
+  emits a restrictive content security policy and the documented browser
+  security headers.
+- `STACK-SITE-005`: The page has one main landmark, a skip link, visible focus
+  states, reduced-motion behavior, semantic headings, sufficient contrast,
+  and responsive layouts at narrow and wide viewports.
+- `STACK-SITE-006`: `GET /healthz` returns the fixed plain-text body `ok\n`;
+  unsupported methods and unknown routes fail closed. The process uses bounded
+  HTTP timeouts and shuts down on `SIGINT` or `SIGTERM`.
+
+The public site sets no cookie, performs no tracking, accepts no form or
+credential, makes no outbound request, and imports no controller, journal, or
+adapter package.
+
 ## Downstream product requirements
 
 - Preview/apply bound to exact actor, plan digest, expiry, target installation,
@@ -129,6 +162,8 @@ on the `1.0.0-alpha.N` release line while any required workstream is incomplete.
 - No Mailu runtime component or adapter. Mailu reference/import compatibility
   remains GOTTH Mail-owned and is not a deployment dependency.
 - No live deployment in the plan-kernel or journal workstreams.
+- No public-site analytics, cookies, account flow, contact-form persistence,
+  controller mutation, or administrator UI.
 
 ## Current alpha acceptance
 

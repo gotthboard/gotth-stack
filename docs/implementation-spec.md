@@ -230,3 +230,50 @@ planned -> approved -> preflighting -> applying -> verifying -> complete
 The journal records and validates this state without executing adapters. An
 `apply` command remains prohibited until adapter and disposable-runtime work
 is admitted; no mutation stub is exposed.
+
+## Public website
+
+Canonical executable: `cmd/gotthstack-web`.
+
+Canonical private package: `internal/site`.
+
+Canonical public source URL:
+`https://github.com/gotthboard/gotth-stack`. The complete landing page renders
+this as an ordinary anchor; it is not a server-side network dependency.
+
+Pinned build inputs are Go 1.26.6, templ 0.3.1020, Node 26.7.0, npm 12.0.2,
+Tailwind CSS and `@tailwindcss/cli` 4.3.3, and HTMX 2.0.10. Templ-generated Go,
+minified CSS, and the pinned HTMX browser asset are committed. A release build
+therefore uses `-mod=readonly` and reads no network or source asset directory.
+
+### Routes
+
+| Method | Path | Response |
+| --- | --- | --- |
+| `GET`, `HEAD` | `/` | complete landing page; `200` |
+| `GET`, `HEAD` | `/principles?topic=control|trust|recovery` | HTMX fragment when `HX-Request` is exactly `true`, otherwise complete page; `200` |
+| `GET`, `HEAD` | `/static/site-ab3aa9255fd5fa082e8fc2f5c6739fa76ea155924477bd238ea44996b8b5e7ed.css` | embedded minified CSS; immutable cache |
+| `GET`, `HEAD` | `/static/htmx-2.0.10.min.js` | embedded pinned HTMX; immutable cache |
+| `GET`, `HEAD` | `/healthz` | `text/plain`; fixed `ok\n` |
+
+The missing topic selects `control`. Duplicate, empty, or unknown topic values
+return `404`. Non-GET/HEAD methods return `405` with `Allow: GET, HEAD`.
+Unknown paths return `404`. Redirects are not used.
+
+The handler rejects empty, escaped, dot-segment, and repeated-slash paths
+before Go's `ServeMux` can canonicalize them with a redirect. Go's general
+`OPTIONS *` shortcut is disabled so every response crosses the site handler
+and security-header boundary. Request headers, including the request line, are
+limited to one MiB.
+
+All responses set `X-Content-Type-Options: nosniff`, `Referrer-Policy:
+no-referrer`, `X-Frame-Options: DENY`, and `Permissions-Policy` denying camera,
+microphone, and geolocation. HTML adds a content security policy allowing only
+same-origin scripts and styles and forbidding objects, frames, and base-URI
+rewrites. HTML uses `Cache-Control: no-store`; static assets use
+`public, max-age=31536000, immutable`.
+
+The principles lookup is a fixed three-entry slice scanned linearly. With
+`p=3` fixed topics, selection is constant time and space. A future unbounded
+content system must replace the fixed assumption explicitly rather than hide
+database or allocation cost behind this handler.

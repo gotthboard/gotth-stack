@@ -13,17 +13,21 @@ features are complete.
    references, and unknown-outcome recovery. The journal is implemented and
    verified for the current `1.0.0-alpha.N` line; it grants no deployment
    authority.
-3. Platform adapters (historical ID `v2.platform-adapters`) — separate Caddy, Authentik, and PostgreSQL adapter
+3. Public website (`public-site`) — a separate informational
+   `gotthstack-web` executable using Go, templ, Tailwind CSS, and HTMX. It has
+   no controller imports or mutation authority and can proceed independently
+   while the platform-adapter workstream remains ready.
+4. Platform adapters (historical ID `v2.platform-adapters`) — separate Caddy, Authentik, and PostgreSQL adapter
    contracts and disposable integration proofs.
-4. Mail stack (historical ID `v3.mail-stack`) — GOTTH Mail control-plane, front/proxy, Postfix, Dovecot,
+5. Mail stack (historical ID `v3.mail-stack`) — GOTTH Mail control-plane, front/proxy, Postfix, Dovecot,
    and Rspamd adapters; OIDC/SCIM composition; per-domain DNS/certificate
    provider seams; mail-flow health; backup; and rollback. Mailu is not a
    runtime component.
-5. Board stack (historical ID `v4.board-stack`) — GOTTH Board adapter, isolated Authentik/PostgreSQL/Caddy
+6. Board stack (historical ID `v4.board-stack`) — GOTTH Board adapter, isolated Authentik/PostgreSQL/Caddy
    composition, migration/readiness proof, backup, and rollback.
-6. Administrator UI (historical ID `v5.admin-ui`) — first-run and operations UI rendered by the controller with
+7. Administrator UI (historical ID `v5.admin-ui`) — first-run and operations UI rendered by the controller with
    Go, templ, Tailwind, HTMX, and ordinary HTML fallback.
-7. Provider extensions (historical ID `v6.provider-extensions`) — admit concrete `gotth-extension-*` providers one
+8. Provider extensions (historical ID `v6.provider-extensions`) — admit concrete `gotth-extension-*` providers one
    repository at a time; start with DNS only after its capability contract is
    smaller than generic host authority.
 

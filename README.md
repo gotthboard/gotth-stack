@@ -35,13 +35,28 @@ workflow IDs name internal workstreams, not product versions.
 - Adapters remain separate: shared orchestration does not become a universal
   component full of product conditionals.
 - DNS and other provider mechanisms remain `gotth-extension-*` services.
-- No library or CLI operation currently invokes Docker, systemd, Caddy,
-  Authentik, PostgreSQL, a mail daemon, a DNS API, or a live GOTTH product.
+- No controller library or `gotth-stack` CLI operation currently invokes
+  Docker, systemd, Caddy, Authentik, PostgreSQL, a mail daemon, a DNS API, or a
+  live GOTTH product. The separate public website only serves informational
+  HTTP responses.
 - Mailu is not a runtime component. GOTTH Mail retains only its separately
   documented reference/import compatibility; `gotth-stack` does not deploy it.
 
 See `docs/` for the product, architecture, implementation, verification, and
 feature contracts.
+
+## Public website
+
+`gotthstack-web` serves the public `gotthstack.com` landing site with Go,
+templ, Tailwind CSS, and HTMX. It is deliberately separate from controller
+authority: it imports neither `pkg/stack` nor `pkg/journal`, exposes no
+administration or apply operation, and makes the complete page usable without
+JavaScript.
+
+```sh
+make generate-web
+go run ./cmd/gotthstack-web
+```
 
 `examples/full-stack.json` demonstrates dependency composition for Caddy,
 Authentik, PostgreSQL, the GOTTH Mail control plane and mail daemons, and GOTTH

@@ -1,0 +1,164 @@
+package site
+
+templ mark() {
+	<svg viewBox="0 0 48 48" aria-hidden="true" class="size-9" fill="none">
+		<path d="M5 7h17v8H13v18h9v8H5V7Z" fill="currentColor"></path>
+		<path d="M43 7H26v8h9v18h-9v8h17V7Z" fill="currentColor"></path>
+		<path d="M18 20h12v8H18z" fill="#ff5c35"></path>
+	</svg>
+}
+
+templ stackCard(number, name, role, detail string, accent bool) {
+	<article class={ "group relative min-h-72 border-t-2 border-ink p-6 transition-colors duration-300 lg:p-8", templ.KV("bg-signal", accent), templ.KV("hover:bg-white", !accent), templ.KV("hover:bg-flare", accent) }>
+		<div class="flex items-start justify-between gap-4 font-mono text-xs font-bold uppercase tracking-[0.22em]">
+			<span>{ number }</span>
+			<span class="rounded-full border border-ink px-3 py-1">{ role }</span>
+		</div>
+		<div class="mt-20">
+			<h3 class="font-sans text-5xl font-black uppercase tracking-[-0.06em] sm:text-6xl">{ name }</h3>
+			<p class="mt-4 max-w-xs text-base font-medium leading-relaxed">{ detail }</p>
+		</div>
+	</article>
+}
+
+templ principleExplorer(selected principle) {
+	<section id="principle-explorer" aria-labelledby="principles-title" class="grid border-y-2 border-ink lg:grid-cols-[0.78fr_1.22fr]">
+		<div class="bg-ink p-7 text-paper sm:p-10 lg:p-14">
+			<p class="font-mono text-xs font-bold uppercase tracking-[0.24em] text-signal">Operational doctrine</p>
+			<h2 id="principles-title" class="mt-5 max-w-md font-sans text-5xl font-black uppercase leading-[0.88] tracking-[-0.065em] sm:text-7xl">Choose the failure you can explain.</h2>
+			<nav aria-label="Engineering principles" class="mt-10 grid gap-2">
+				for _, item := range principles {
+					<a id={ "principle-link-" + item.Key } href={ "/principles?topic=" + item.Key } hx-get={ "/principles?topic=" + item.Key } hx-target="#principle-panel" hx-swap="innerHTML" hx-push-url="true" aria-controls="principle-panel" class="principle-link flex items-center justify-between border border-white/25 px-5 py-4 font-mono text-sm font-bold uppercase tracking-[0.16em] text-paper transition-colors hover:border-paper hover:bg-paper hover:text-ink">
+						<span>{ item.Number } / { item.Eyebrow }</span>
+						<span aria-hidden="true">&#8599;</span>
+					</a>
+				}
+			</nav>
+		</div>
+		<div id="principle-panel" aria-live="polite" class="grid-paper flex min-h-[34rem] items-end p-7 sm:p-10 lg:p-14">
+			@principleDetail(selected)
+		</div>
+	</section>
+}
+
+templ principleDetail(selected principle) {
+	<article data-topic={ selected.Key } class="max-w-2xl border-2 border-ink bg-paper p-7 shadow-[10px_10px_0_#121212] sm:p-10">
+		<div class="flex items-center justify-between gap-4 border-b-2 border-ink pb-5 font-mono text-xs font-bold uppercase tracking-[0.22em]">
+			<span>{ selected.Eyebrow }</span>
+			<span>{ selected.Number } / 03</span>
+		</div>
+		<h3 class="mt-8 font-sans text-4xl font-black uppercase leading-[0.94] tracking-[-0.055em] sm:text-6xl">{ selected.Title }</h3>
+		<p class="mt-7 max-w-xl text-lg font-medium leading-relaxed sm:text-xl">{ selected.Body }</p>
+		<p class="mt-9 border-l-4 border-flare pl-4 font-mono text-xs font-bold uppercase leading-relaxed tracking-[0.15em]">{ selected.Evidence }</p>
+	</article>
+}
+
+templ page(view pageView) {
+	<!doctype html>
+	<html lang="en">
+		<head>
+			<meta charset="utf-8"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1"/>
+			<meta name="description" content="GOTTH Stack: Go, templ, Tailwind CSS, and HTMX for direct, inspectable web software."/>
+			<meta name="theme-color" content="#121212"/>
+			<meta property="og:title" content="GOTTH Stack — The web stack with nothing to hide"/>
+			<meta property="og:description" content="Go, templ, Tailwind CSS, and HTMX for direct, inspectable web software."/>
+			<meta property="og:type" content="website"/>
+			<meta property="og:url" content="https://gotthstack.com/"/>
+			<title>GOTTH Stack — The web stack with nothing to hide</title>
+			<link rel="canonical" href="https://gotthstack.com/"/>
+			<link rel="stylesheet" href="/static/site-ab3aa9255fd5fa082e8fc2f5c6739fa76ea155924477bd238ea44996b8b5e7ed.css"/>
+			<script src="/static/htmx-2.0.10.min.js" defer></script>
+		</head>
+		<body class="overflow-x-hidden font-sans antialiased">
+			<a href="#main-content" class="fixed left-4 top-4 z-50 -translate-y-24 bg-signal px-4 py-3 font-mono text-xs font-bold uppercase tracking-widest text-ink transition-transform focus:translate-y-0">Skip to content</a>
+			<header class="border-b-2 border-ink bg-paper">
+				<div class="mx-auto flex max-w-[96rem] items-center justify-between px-5 py-4 sm:px-8 lg:px-12">
+					<a href="/" aria-label="GOTTH Stack home" class="flex items-center gap-3 font-black uppercase tracking-[-0.04em]">
+						@mark()
+						<span class="text-xl">GOTTH / Stack</span>
+					</a>
+					<nav aria-label="Primary navigation" class="hidden items-center gap-7 font-mono text-xs font-bold uppercase tracking-[0.18em] sm:flex">
+						<a href="#mechanism" class="decoration-2 underline-offset-4 hover:underline">Mechanism</a>
+						<a href="#controller" class="decoration-2 underline-offset-4 hover:underline">Controller</a>
+						<a href="#principle-explorer" class="bg-ink px-4 py-3 text-paper transition-colors hover:bg-flare hover:text-ink">Principles</a>
+					</nav>
+					<span class="border border-ink px-3 py-2 font-mono text-[0.65rem] font-bold uppercase tracking-[0.14em] sm:hidden">Alpha / Honest</span>
+				</div>
+			</header>
+			<main id="main-content">
+				<section class="noise relative overflow-hidden border-b-2 border-ink bg-ink text-paper">
+					<div class="relative z-10 mx-auto grid min-h-[46rem] max-w-[96rem] items-end gap-10 px-5 py-16 sm:px-8 sm:py-20 lg:grid-cols-[1.4fr_0.6fr] lg:px-12 lg:py-24">
+						<div class="reveal">
+							<p class="flex items-center gap-3 font-mono text-xs font-bold uppercase tracking-[0.25em] text-signal"><span class="inline-block size-2 animate-pulse rounded-full bg-signal"></span> Server rendered / selectively alive</p>
+							<h1 class="mt-8 max-w-6xl font-sans text-[clamp(4.5rem,12vw,11rem)] font-black uppercase leading-[0.72] tracking-[-0.085em]">Nothing<br/><span class="text-signal">to hide.</span></h1>
+							<p class="mt-10 max-w-2xl text-xl font-medium leading-relaxed text-paper/80 sm:text-2xl">Go runs the server. templ renders the HTML. Tailwind shapes the surface. HTMX adds interaction only where it earns its keep.</p>
+						</div>
+						<aside class="reveal reveal-delay border border-paper/40 bg-paper/5 p-6 backdrop-blur-sm lg:mb-3" aria-label="Runtime summary">
+							<div class="flex items-center justify-between border-b border-paper/30 pb-4 font-mono text-[0.65rem] font-bold uppercase tracking-[0.2em] text-paper/70">
+								<span>Runtime profile</span><span class="text-signal">Lean</span>
+							</div>
+							<div class="mt-5 space-y-4 font-mono text-sm">
+								<p><span class="text-flare">$</span> go run ./cmd/gotthstack-web</p>
+								<p class="text-paper/55"># one binary</p>
+								<p class="text-paper/55"># embedded assets</p>
+								<p class="text-paper/55"># no Node at runtime</p>
+							</div>
+							<div class="mt-9 grid grid-cols-2 gap-px bg-paper/20 text-center font-mono text-[0.65rem] font-bold uppercase tracking-[0.16em]">
+								<div class="bg-ink p-4"><span class="block text-xl text-signal">HTML</span> first</div>
+								<div class="bg-ink p-4"><span class="block text-xl text-signal">JS</span> optional</div>
+							</div>
+						</aside>
+					</div>
+				</section>
+				<div class="overflow-hidden border-b-2 border-ink bg-signal py-3 font-mono text-xs font-black uppercase tracking-[0.22em]" aria-hidden="true">
+					<div class="ticker-track flex w-max whitespace-nowrap"><span class="px-4">Go / templ / Tailwind CSS / HTMX / boring on purpose / </span><span class="px-4">Go / templ / Tailwind CSS / HTMX / boring on purpose / </span><span class="px-4">Go / templ / Tailwind CSS / HTMX / boring on purpose / </span><span class="px-4">Go / templ / Tailwind CSS / HTMX / boring on purpose / </span></div>
+				</div>
+				<section id="mechanism" aria-labelledby="mechanism-title" class="mx-auto max-w-[96rem] px-5 py-20 sm:px-8 lg:px-12 lg:py-28">
+					<div class="grid gap-8 border-b-2 border-ink pb-10 lg:grid-cols-2 lg:items-end">
+						<div><p class="inline-flex bg-flare px-2 py-1 font-mono text-xs font-bold uppercase tracking-[0.22em] text-ink">The mechanism</p><h2 id="mechanism-title" class="mt-4 font-sans text-6xl font-black uppercase leading-[0.82] tracking-[-0.07em] sm:text-8xl">Four tools.<br/>One straight line.</h2></div>
+						<p class="max-w-xl text-lg font-medium leading-relaxed lg:justify-self-end">A request comes in. Go decides. templ writes HTML. Tailwind styles the result. HTMX can replace one fragment. There is no client-side state empire hiding between the click and the response.</p>
+					</div>
+					<div class="grid sm:grid-cols-2 lg:grid-cols-4">
+						@stackCard("01", "Go", "Runtime", "Direct HTTP, explicit concurrency, one deployable binary.", false)
+						@stackCard("02", "templ", "Markup", "Typed components that compile into ordinary Go.", true)
+						@stackCard("03", "Tailwind", "Surface", "A build-time styling system, not a runtime dependency.", false)
+						@stackCard("04", "HTMX", "Motion", "Server-owned interaction without a JavaScript application shell.", false)
+					</div>
+				</section>
+				<section id="controller" aria-labelledby="controller-title" class="border-y-2 border-ink bg-flare">
+					<div class="mx-auto grid max-w-[96rem] lg:grid-cols-2">
+						<div class="border-b-2 border-ink p-7 sm:p-10 lg:border-b-0 lg:border-r-2 lg:p-14">
+							<p class="font-mono text-xs font-bold uppercase tracking-[0.22em]">The other GOTTH Stack</p>
+							<h2 id="controller-title" class="mt-5 font-sans text-5xl font-black uppercase leading-[0.88] tracking-[-0.065em] sm:text-7xl">Deployment without permission theater.</h2>
+						</div>
+						<div class="grid-paper p-7 sm:p-10 lg:p-14">
+							<div class="border-2 border-ink bg-paper p-7 shadow-[10px_10px_0_#121212]">
+								<div class="flex items-center justify-between gap-4 border-b-2 border-ink pb-5 font-mono text-xs font-bold uppercase tracking-[0.18em]"><span>Controller status</span><span class="bg-signal px-3 py-1">Alpha / Active</span></div>
+								<p class="mt-7 text-xl font-bold leading-relaxed">The plan kernel validates secret-free manifests. The durable journal binds approval and recovery state.</p>
+								<p class="mt-5 text-base font-medium leading-relaxed text-ink/70">There is deliberately no apply command yet. Platform adapters must prove preflight, verification, rollback, and crash recovery before the controller earns that authority.</p>
+								<div class="mt-8 flex items-center gap-3 font-mono text-xs font-black uppercase tracking-[0.14em]"><span class="size-3 bg-flare"></span> Truth before theater</div>
+							</div>
+						</div>
+					</div>
+				</section>
+				@principleExplorer(view.Selected)
+				<section class="bg-signal px-5 py-20 sm:px-8 lg:px-12 lg:py-28">
+					<div class="mx-auto max-w-[96rem]">
+						<p class="font-mono text-xs font-bold uppercase tracking-[0.24em]">A smaller stack / a clearer machine</p>
+						<div class="mt-6 grid gap-10 lg:grid-cols-[1.4fr_0.6fr] lg:items-end">
+							<h2 class="font-sans text-6xl font-black uppercase leading-[0.82] tracking-[-0.075em] sm:text-8xl lg:text-9xl">Read the source.<br/>Know the cost.</h2>
+							<a href="https://github.com/gotthboard/gotth-stack" class="inline-flex items-center justify-between border-2 border-ink bg-ink px-6 py-5 font-mono text-sm font-black uppercase tracking-[0.16em] text-paper transition-colors hover:bg-flare hover:text-ink">View on GitHub <span aria-hidden="true">&#8599;</span></a>
+						</div>
+					</div>
+				</section>
+			</main>
+			<footer class="bg-ink px-5 py-10 text-paper sm:px-8 lg:px-12">
+				<div class="mx-auto flex max-w-[96rem] flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+					<div class="flex items-center gap-3">@mark()<span class="font-sans text-xl font-black uppercase tracking-[-0.04em]">GOTTH Stack</span></div>
+					<p class="font-mono text-[0.68rem] font-bold uppercase tracking-[0.18em] text-paper/60">Go / templ / Tailwind CSS / HTMX &mdash; 2026</p>
+				</div>
+			</footer>
+		</body>
+	</html>
+}

@@ -1,7 +1,7 @@
 schema_version = 1
 project = "gotth-stack"
 profile = "strict"
-active = "v2.platform-adapters"
+active = ""
 
 [settings]
 worktree_root = "worktrees"
@@ -132,7 +132,7 @@ retries = 0
 [[feature."v1.operation-journal".verification]]
 id = "source-boundary"
 kind = "security"
-command = '''test -z "$(rg -n --glob '*.go' --glob '!*_test.go' 'net/http|os/exec|syscall\.(Exec|ForkExec)|docker|systemctl|func .*Apply' pkg/journal cmd; rg -n --glob '*.go' --glob '!*_test.go' '"apply"' cmd)"'''
+command = '''test -z "$(rg -n --glob '*.go' --glob '!*_test.go' 'net/http|os/exec|syscall\.(Exec|ForkExec)|docker|systemctl|func .*Apply' pkg/journal cmd/gotth-stack; rg -n --glob '*.go' --glob '!*_test.go' '"apply"' cmd/gotth-stack)"'''
 required = true
 timeout_seconds = 120
 side_effect = "read_only"
@@ -317,3 +317,57 @@ acceptance = ["One DNS provider passes conformance without broader host authorit
 id = "v2.platform-adapters"
 type = "prerequisite"
 state = "unresolved"
+
+[feature."public-site"]
+id = "public-site"
+slug = "public-site"
+name = "gotthstack.com public website"
+namespace = "site"
+parent = ""
+state = "done"
+risk = "medium"
+assurance = "traceable-tests"
+created_at = "2026-09-14T12:53:13Z"
+activated_at = "2026-09-14T12:53:13Z"
+updated_at = "2026-09-14T14:12:15Z"
+completed_at = "2026-09-14T14:12:15Z"
+folder = "workflow/features/public-site"
+worktree = "/home/linus/.openclaw/workspace/.artifacts/worktrees/gotth-stack-public-site"
+branch = "feature/public-site"
+scope = ["Public gotthstack.com landing page", "Go templ Tailwind CSS and HTMX", "Progressive enhancement", "Embedded versioned assets", "HTTP security and graceful lifecycle"]
+non_goals = ["Controller apply or administration", "Host mutation", "Secrets or credentials", "Analytics or cookies", "Deployment or DNS"]
+affected_files = ["README.md", "Makefile", "go.mod", "go.sum", "package.json", "package-lock.json", "assets/**", "cmd/gotthstack-web/**", "internal/site/**", "scripts/**", "docs/**", "workflow/**", "workflow.toml", "workflow.events.jsonl"]
+invariants = ["The site imports no controller journal or adapter package", "JavaScript is optional", "No request grants deployment authority", "No request value is reflected on rejection", "Runtime needs no Node compiler or asset directory"]
+acceptance = ["STACK-SITE-001 through STACK-SITE-006 trace to code tests and evidence", "Generation format vet race coverage build process and browser gates pass", "Source scan proves no controller mutation secret tracking cookie or outbound client path", "Cold review passes"]
+
+[feature."public-site".rollback]
+strategy = "revert_public_site_feature_commit"
+notes = "The website is isolated from controller state and has no persistent data"
+data_loss_risk = false
+requires_migration_down = false
+
+[[feature."public-site".interface]]
+name = "Public informational HTTP routes"
+kind = "http"
+stability = "unstable-alpha"
+change = "new"
+
+[[feature."public-site".verification]]
+id = "verify-web"
+kind = "unit"
+command = "make verify-web"
+required = true
+timeout_seconds = 1200
+side_effect = "local_write"
+network = true
+retries = 0
+
+[[feature."public-site".verification]]
+id = "browser-web"
+kind = "manual"
+command = "scripts/verify-web-browser.sh"
+required = true
+timeout_seconds = 300
+side_effect = "local_write"
+network = false
+retries = 0
