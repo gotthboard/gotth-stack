@@ -44,6 +44,8 @@ digest is the desired-state identity. The planner performs a stable
 topological sort and hashes the resulting plan without its own digest field.
 The human-readable source label is inert in V0; a future adapter admission
 layer must validate and retrieve it without treating text as a command.
+The digests detect inconsistent or changed content; they are not signatures
+and do not establish artifact publisher authenticity.
 
 ## Failure model
 

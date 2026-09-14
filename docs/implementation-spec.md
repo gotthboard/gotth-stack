@@ -19,7 +19,7 @@ canonical package.
 - Stack/component/secret IDs: lowercase ASCII slugs, 1–80 bytes.
 - Adapter identity: `gotth-stack-adapter-<slug>.v<positive integer>`, at most
   160 bytes.
-- Artifact source: a 1–2048 byte canonical `https` or `oci` URL with a host and
+- Artifact source: a 1–2048 byte `https` or `oci` URL label with a host and
   path, and without user information, query, fragment, surrounding whitespace,
   or backslashes. It is an inert label in V0 and is never opened or executed.
 - Artifact and configuration digests: lowercase `sha256:` plus 64 hex digits.
@@ -36,6 +36,10 @@ Normalization copies input before sorting. `encoding/json` marshals only fixed
 structs—never maps—so field order is stable. Manifest digest hashes compact
 normalized JSON. Plan digest hashes compact JSON with the digest field empty.
 `MarshalPlan` emits indented JSON followed by one newline.
+It rejects non-canonical `null` set fields and verifies that the manifest
+digest can be reconstructed from the plan contents. These digests bind
+content for identity and approval; they are not signatures and provide no
+publisher authenticity.
 
 ## CLI
 
