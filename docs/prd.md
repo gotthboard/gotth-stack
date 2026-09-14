@@ -50,7 +50,8 @@ on the `1.0.0-alpha.N` release line while any required workstream is incomplete.
 
 - `STACK-JRN-001`: Create or reopen exactly one stable installation identity
   in a private local journal directory. Reject symlinks, non-regular journal
-  files, identity mismatch, unsupported storage format, and concurrent writers.
+  files, foreign ownership, identity mismatch, unsupported storage format, and
+  concurrent writers.
 - `STACK-JRN-002`: Record an explicit approval before any operation. Approval
   binds the installation ID, actor ID, authenticated-authority evidence digest,
   issue and expiry times, exact manifest and plan digests, ordered component and

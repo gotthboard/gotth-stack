@@ -78,7 +78,7 @@ func Open(path, installationID string) (*Journal, Recovery, error) {
 		return nil, Recovery{}, ErrInvalidInput
 	}
 	info, err := os.Lstat(path)
-	if err != nil || !info.IsDir() || info.Mode().Perm() != 0o700 {
+	if err != nil || !info.IsDir() || info.Mode().Perm() != 0o700 || !ownedByEffectiveUser(info) {
 		return nil, Recovery{}, ErrCorrupt
 	}
 	root, err := os.OpenRoot(path)
@@ -213,7 +213,7 @@ func validateDirectory(root *os.Root) error {
 		name := entry.Name()
 		if name == "journal.head.tmp" {
 			info, err := root.Lstat(name)
-			if err != nil || !info.Mode().IsRegular() || info.Mode().Perm() != 0o600 {
+			if err != nil || !info.Mode().IsRegular() || info.Mode().Perm() != 0o600 || !ownedByEffectiveUser(info) {
 				return ErrCorrupt
 			}
 			if err := root.Remove(name); err != nil {
@@ -226,7 +226,7 @@ func validateDirectory(root *os.Root) error {
 			return ErrCorrupt
 		}
 		info, err := root.Lstat(name)
-		if err != nil || !info.Mode().IsRegular() || info.Mode().Perm() != 0o600 {
+		if err != nil || !info.Mode().IsRegular() || info.Mode().Perm() != 0o600 || !ownedByEffectiveUser(info) {
 			return ErrCorrupt
 		}
 		seen[name] = struct{}{}
@@ -244,7 +244,7 @@ func validateDirectory(root *os.Root) error {
 
 func validateRegularFile(root *os.Root, name string) error {
 	info, err := root.Lstat(name)
-	if err != nil || !info.Mode().IsRegular() || info.Mode().Perm() != 0o600 {
+	if err != nil || !info.Mode().IsRegular() || info.Mode().Perm() != 0o600 || !ownedByEffectiveUser(info) {
 		return ErrCorrupt
 	}
 	return nil
@@ -259,7 +259,7 @@ func validateOpenRoot(root *os.Root) error {
 	}
 	defer directory.Close()
 	info, err := directory.Stat()
-	if err != nil || !info.IsDir() || info.Mode().Perm() != 0o700 {
+	if err != nil || !info.IsDir() || info.Mode().Perm() != 0o700 || !ownedByEffectiveUser(info) {
 		return ErrCorrupt
 	}
 	return nil
@@ -269,7 +269,7 @@ func validateOpenRoot(root *os.Root) error {
 // actually held by the descriptor before it can be trusted as journal state.
 func validateOpenRegularFile(file *os.File) error {
 	info, err := file.Stat()
-	if err != nil || !info.Mode().IsRegular() || info.Mode().Perm() != 0o600 {
+	if err != nil || !info.Mode().IsRegular() || info.Mode().Perm() != 0o600 || !ownedByEffectiveUser(info) {
 		return ErrCorrupt
 	}
 	return nil
@@ -313,10 +313,15 @@ func readFixedFile(root *os.Root, name string, limit int64) ([]byte, error) {
 	}
 	defer file.Close()
 	info, err := file.Stat()
-	if err != nil || !info.Mode().IsRegular() || info.Mode().Perm() != 0o600 || info.Size() > limit {
+	if err != nil || !info.Mode().IsRegular() || info.Mode().Perm() != 0o600 || !ownedByEffectiveUser(info) || info.Size() > limit {
 		return nil, ErrCorrupt
 	}
 	return io.ReadAll(io.LimitReader(file, limit+1))
+}
+
+func ownedByEffectiveUser(info fs.FileInfo) bool {
+	stat, ok := info.Sys().(*syscall.Stat_t)
+	return ok && stat.Uid == uint32(os.Geteuid())
 }
 
 // closeFiles attempts every release even after one close error so an error

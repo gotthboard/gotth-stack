@@ -201,7 +201,8 @@ The implementation opens the journal directory through Go `os.Root` after
 creation/validation and uses fixed relative names. The caller must place the
 journal under a trusted parent; the alpha contract does not defend against a
 privileged or same-account process deliberately replacing the supplied root
-path before it is opened.
+path before it is opened. The opened root and every fixed file must be owned by
+the controller's effective UID in addition to having exact private modes.
 
 Go `os.File.Sync` maps to the platform synchronization call. Linux `fsync(2)`
 states that syncing a file does not make its directory entry durable; the

@@ -19,8 +19,9 @@ cancellation, unknown mutation outcomes, rollback, and terminal states.
 
 Cold hardening raised the frame bound from 1 MiB to 4 MiB after a largest-valid
 plan proof showed that the complete bounded approval projection exceeds the
-smaller limit. It also validates the opened root/lock/log descriptors, removes a
-create-time corrupt-directory leak, permits operator rollback without a
+smaller limit. It also validates opened root/lock/log descriptors and their
+effective-UID ownership, removes a create-time corrupt-directory leak, permits
+operator rollback without a
 fabricated failure, and forbids ordinary terminal failure after mutation may
 have left external state live. A subsequent authority review made approvals
 single-operation capabilities so a fresh operation ID cannot replay one human

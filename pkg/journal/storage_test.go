@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
+	"syscall"
 	"testing"
 )
 
@@ -63,6 +65,31 @@ func TestRootDescriptorValidationRejectsBroadMode(t *testing.T) {
 		t.Fatalf("root mode=%v", err)
 	}
 }
+
+func TestOwnershipValidationRequiresEffectiveUser(t *testing.T) {
+	path := t.TempDir() + "/owned"
+	if err := os.WriteFile(path, []byte("x"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	info, err := os.Stat(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !ownedByEffectiveUser(info) {
+		t.Fatal("current owner rejected")
+	}
+	foreign := foreignFileInfo{FileInfo: info, stat: &syscall.Stat_t{Uid: uint32(os.Geteuid()) ^ 1}}
+	if ownedByEffectiveUser(foreign) {
+		t.Fatal("foreign owner accepted")
+	}
+}
+
+type foreignFileInfo struct {
+	fs.FileInfo
+	stat *syscall.Stat_t
+}
+
+func (info foreignFileInfo) Sys() any { return info.stat }
 
 func TestAppendStorageFailuresPoisonHandle(t *testing.T) {
 	cases := map[string]func(*Journal){
