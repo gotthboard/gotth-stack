@@ -189,8 +189,9 @@ func (journal *Journal) applyCancel(operationID string, observedAt time.Time) er
 	return nil
 }
 
-// applyRollback requires actual rollback-eligible mutation history, preventing
-// a preflight-only failure from being mislabeled as rolled back.
+// applyRollback requires actual rollback-eligible mutation history. It may be
+// operator-initiated after successful mutation; rollback is not conditional on
+// manufacturing a later failure record.
 func (journal *Journal) applyRollback(operationID string) error {
 	operation, ok := journal.operations[operationID]
 	if !ok {
@@ -199,7 +200,8 @@ func (journal *Journal) applyRollback(operationID string) error {
 	if operation.RollbackStarted {
 		return nil
 	}
-	if operation.State != StateFailed || inFlight(operation) != nil || !operation.FinishedAt.IsZero() || !hasRollbackCandidate(operation) {
+	rollbackState := operation.State == StateApplying || operation.State == StateVerifying || operation.State == StateFailed
+	if !rollbackState || !operation.MutationStarted || inFlight(operation) != nil || !operation.FinishedAt.IsZero() || !hasRollbackCandidate(operation) {
 		return ErrInvalidTransition
 	}
 	operation.RollbackStarted = true
@@ -227,13 +229,14 @@ func (journal *Journal) applyTerminal(terminal terminalRecord, observedAt time.T
 			return ErrInvalidTransition
 		}
 	case OutcomeFailed:
-		if operation.State != StateFailed {
+		if operation.State != StateFailed || operation.MutationStarted {
 			return ErrInvalidTransition
 		}
 	case OutcomeRecoveryRequired:
 		step := inFlight(operation)
 		interruptedMutation := step != nil && step.Mode == ModeMutation && (operation.State == StateApplying || operation.State == StateRollingBack || operation.State == StateRecoveryRequired)
-		if operation.State != StateRecoveryRequired && !interruptedMutation {
+		possiblyLiveMutation := operation.MutationStarted && operation.FinishedAt.IsZero()
+		if operation.State != StateRecoveryRequired && !interruptedMutation && !possiblyLiveMutation {
 			return ErrInvalidTransition
 		}
 	case OutcomeRolledBack:

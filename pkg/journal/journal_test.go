@@ -2,9 +2,11 @@ package journal
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"strings"
 	"testing"
 	"time"
@@ -403,4 +405,59 @@ func TestErrorsDoNotDiscloseHostileInput(t *testing.T) {
 	if err == nil || strings.Contains(err.Error(), hostile) {
 		t.Fatalf("error disclosed input: %v", err)
 	}
+}
+
+func TestLargestValidPlanFitsOneApprovalRecord(t *testing.T) {
+	journal, _, now := newTestJournal(t)
+	components := make([]stack.Component, 64)
+	revisions := make([]SecretRevision, 0, 64*64)
+	for componentIndex := range components {
+		componentID := paddedSlug("component", componentIndex, 80)
+		capabilities := make([]string, 64)
+		secretSlots := make([]string, 64)
+		for valueIndex := 0; valueIndex < 64; valueIndex++ {
+			capabilities[valueIndex] = paddedCapability(valueIndex, 160)
+			secretSlots[valueIndex] = paddedSlug("secret", valueIndex, 80)
+			revisions = append(revisions, SecretRevision{ComponentID: componentID, Slot: secretSlots[valueIndex], RevisionDigest: digestC})
+		}
+		adapterPrefix := "gotth-stack-adapter-"
+		adapterSuffix := ".v1"
+		components[componentIndex] = stack.Component{
+			ID:      componentID,
+			Adapter: adapterPrefix + paddedSlug("adapter", componentIndex, 160-len(adapterPrefix)-len(adapterSuffix)) + adapterSuffix,
+			Artifact: stack.Artifact{
+				Source: "https://registry.example.test/" + strings.Repeat("a", 2048-len("https://registry.example.test/")),
+				Digest: digestA,
+			},
+			ConfigurationDigest: digestB,
+			DependsOn:           []string{},
+			Capabilities:        capabilities,
+			SecretSlots:         secretSlots,
+		}
+	}
+	plan, err := stack.BuildPlan(stack.Manifest{SchemaVersion: stack.SchemaVersion, Name: "largest-stack", Components: components})
+	if err != nil {
+		t.Fatal(err)
+	}
+	sort.Slice(revisions, func(left, right int) bool { return secretKey(revisions[left]) < secretKey(revisions[right]) })
+	if _, err := journal.RecordApproval(plan, ApprovalInput{ID: "approval-largest", ActorID: "operator-a", AuthorityDigest: digestA, ExpiresAt: now.Add(time.Hour), SecretRevisions: revisions}); err != nil {
+		t.Fatalf("largest bounded approval: %v", err)
+	}
+	info, err := journal.log.Stat()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if info.Size() <= 1<<20 || info.Size() > int64(MaxPayloadSize+frameHeaderSize) {
+		t.Fatalf("largest approval frame size=%d", info.Size())
+	}
+}
+
+func paddedSlug(prefix string, index, length int) string {
+	suffix := fmt.Sprintf("-%02d", index)
+	return prefix + "-" + strings.Repeat("a", length-len(prefix)-len(suffix)-1) + suffix
+}
+
+func paddedCapability(index, length int) string {
+	prefix := fmt.Sprintf("capability-%02d.", index)
+	return prefix + strings.Repeat("a", length-len(prefix))
 }

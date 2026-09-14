@@ -17,6 +17,13 @@ checksum/chain/sequence/schema/identity/state corruption, frame/log bounds,
 expiry, duplicate/conflicting requests, phase order, failure points,
 cancellation, unknown mutation outcomes, rollback, and terminal states.
 
+Cold hardening raised the frame bound from 1 MiB to 4 MiB after a largest-valid
+plan proof showed that the complete bounded approval projection exceeds the
+smaller limit. It also validates the opened lock/log descriptors, removes a
+create-time corrupt-directory leak, permits operator rollback without a
+fabricated failure, and forbids ordinary terminal failure after mutation may
+have left external state live.
+
 This remains a non-executing `1.0.0-alpha.N` workstream. It adds no adapter,
 apply command, network client, shell, secret retrieval, host mutation,
 deployment, tag, or release.

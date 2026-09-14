@@ -131,3 +131,15 @@ func TestCanCompleteAndRollbackRejectIncompleteState(t *testing.T) {
 		t.Fatal("rolled back after rollback failure")
 	}
 }
+
+func TestCanCompleteRequiresEveryApprovedComponent(t *testing.T) {
+	approval := Approval{Components: []ApprovedComponent{{ComponentID: "database"}, {ComponentID: "proxy"}}}
+	operation := &Operation{State: StateVerifying, Steps: []Step{{ComponentID: "database", Phase: PhaseVerify, Mode: ModeReadOnly, Status: StepSucceeded}}}
+	if canComplete(operation, approval) {
+		t.Fatal("completed with one approved component unverified")
+	}
+	operation.Steps = append(operation.Steps, Step{ComponentID: "proxy", Phase: PhaseVerify, Mode: ModeReadOnly, Status: StepSucceeded})
+	if !canComplete(operation, approval) {
+		t.Fatal("did not complete with every approved component verified")
+	}
+}

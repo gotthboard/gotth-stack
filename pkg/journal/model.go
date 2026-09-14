@@ -9,7 +9,7 @@ import (
 
 const (
 	SchemaVersion  = 1
-	MaxPayloadSize = 1 << 20
+	MaxPayloadSize = 4 << 20
 	MaxLogSize     = 512 << 20
 	MaxRecords     = 262144
 )

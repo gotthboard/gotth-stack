@@ -35,6 +35,7 @@ func TestReplayRejectsFramingAndSemanticCorruption(t *testing.T) {
 		"schema": func(t *testing.T, root string) {
 			rewriteFirstRecord(t, root, func(record *journalRecord) { record.SchemaVersion = 2 })
 		},
+		"noncanonical": rewriteFirstRecordNonCanonical,
 	}
 	for name, mutate := range cases {
 		t.Run(name, func(t *testing.T) {
@@ -47,6 +48,33 @@ func TestReplayRejectsFramingAndSemanticCorruption(t *testing.T) {
 			}
 		})
 	}
+}
+
+func rewriteFirstRecordNonCanonical(t *testing.T, root string) {
+	t.Helper()
+	path := filepath.Join(root, "journal.log")
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	length := int(binary.BigEndian.Uint32(data[8:12]))
+	var record journalRecord
+	if err := json.Unmarshal(data[frameHeaderSize:frameHeaderSize+length], &record); err != nil {
+		t.Fatal(err)
+	}
+	payload, err := json.MarshalIndent(record, "", "  ")
+	if err != nil {
+		t.Fatal(err)
+	}
+	frame, err := encodeFrame(payload)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, frame, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	sum := sha256.Sum256(payload)
+	writeTestHead(t, root, headFile{SchemaVersion: SchemaVersion, Sequence: record.Sequence, Digest: "sha256:" + hex.EncodeToString(sum[:])})
 }
 
 func TestReplayRejectsValidlyFramedInvalidTransition(t *testing.T) {

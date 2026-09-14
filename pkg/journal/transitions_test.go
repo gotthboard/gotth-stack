@@ -126,7 +126,78 @@ func TestRecoveryTerminalAndRecoveryOnlyRollbackRefusal(t *testing.T) {
 		if _, err = journal.BeginRollback(operation.ID); !errors.Is(err, ErrInvalidTransition) {
 			t.Fatalf("recovery-only rollback error=%v operation=%#v", err, operation)
 		}
+		if _, err = journal.FinishOperation(operation.ID, OutcomeFailed); !errors.Is(err, ErrInvalidTransition) {
+			t.Fatalf("mutation hidden as ordinary failure: %v", err)
+		}
+		operation, err = journal.FinishOperation(operation.ID, OutcomeRecoveryRequired)
+		if err != nil || operation.State != StateRecoveryRequired || operation.FinishedAt.IsZero() {
+			t.Fatalf("recovery-only terminal=%#v err=%v", operation, err)
+		}
 	})
+}
+
+func TestVerifyFailureAfterMutationRequiresRollbackOrRecovery(t *testing.T) {
+	journal, _, now := newTestJournal(t)
+	plan := testPlan(t, false)
+	recordTestApproval(t, journal, plan, now)
+	operation := startTestOperation(t, journal, plan)
+	finishReadOnly(t, journal, operation.ID, "preflight-database", "database", PhasePreflight, 1)
+	if _, err := journal.BeginStep(StepInput{OperationID: operation.ID, StepID: "apply-database", ComponentID: "database", Phase: PhaseApply, Mode: ModeMutation, Attempt: 1, IdempotencyDigest: digestA, Rollback: RollbackPolicy{ReferenceDigest: digestB}}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := journal.FinishStep(StepResultInput{OperationID: operation.ID, StepID: "apply-database", Attempt: 1, Status: StepSucceeded, ResultDigest: digestA}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := journal.BeginStep(StepInput{OperationID: operation.ID, StepID: "verify-database", ComponentID: "database", Phase: PhaseVerify, Mode: ModeReadOnly, Attempt: 1}); err != nil {
+		t.Fatal(err)
+	}
+	operation, err := journal.FinishStep(StepResultInput{OperationID: operation.ID, StepID: "verify-database", Attempt: 1, Status: StepFailed, ReasonCode: "verify_failed"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err = journal.FinishOperation(operation.ID, OutcomeFailed); !errors.Is(err, ErrInvalidTransition) {
+		t.Fatalf("mutation hidden as ordinary failure: %v", err)
+	}
+	operation, err = journal.FinishOperation(operation.ID, OutcomeRecoveryRequired)
+	if err != nil || operation.State != StateRecoveryRequired {
+		t.Fatalf("recovery terminal=%#v err=%v", operation, err)
+	}
+}
+
+func TestSuccessfulMutationMayBeRolledBackWithoutInventingFailure(t *testing.T) {
+	journal, _, now := newTestJournal(t)
+	plan := testPlan(t, false)
+	recordTestApproval(t, journal, plan, now)
+	operation := startTestOperation(t, journal, plan)
+	finishReadOnly(t, journal, operation.ID, "preflight-database", "database", PhasePreflight, 1)
+	if _, err := journal.BeginStep(StepInput{OperationID: operation.ID, StepID: "apply-database", ComponentID: "database", Phase: PhaseApply, Mode: ModeMutation, Attempt: 1, IdempotencyDigest: digestA, Rollback: RollbackPolicy{ReferenceDigest: digestB}}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := journal.FinishStep(StepResultInput{OperationID: operation.ID, StepID: "apply-database", Attempt: 1, Status: StepSucceeded, ResultDigest: digestA}); err != nil {
+		t.Fatal(err)
+	}
+	operation, err := journal.BeginRollback(operation.ID)
+	if err != nil || operation.State != StateRollingBack {
+		t.Fatalf("operator rollback=%#v err=%v", operation, err)
+	}
+}
+
+func TestSuccessfulMutationMayTerminateRecoveryRequired(t *testing.T) {
+	journal, _, now := newTestJournal(t)
+	plan := testPlan(t, false)
+	recordTestApproval(t, journal, plan, now)
+	operation := startTestOperation(t, journal, plan)
+	finishReadOnly(t, journal, operation.ID, "preflight-database", "database", PhasePreflight, 1)
+	if _, err := journal.BeginStep(StepInput{OperationID: operation.ID, StepID: "apply-database", ComponentID: "database", Phase: PhaseApply, Mode: ModeMutation, Attempt: 1, IdempotencyDigest: digestA, Rollback: RollbackPolicy{ReferenceDigest: digestB}}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := journal.FinishStep(StepResultInput{OperationID: operation.ID, StepID: "apply-database", Attempt: 1, Status: StepSucceeded, ResultDigest: digestA}); err != nil {
+		t.Fatal(err)
+	}
+	operation, err := journal.FinishOperation(operation.ID, OutcomeRecoveryRequired)
+	if err != nil || operation.State != StateRecoveryRequired || operation.FinishedAt.IsZero() {
+		t.Fatalf("explicit recovery=%#v err=%v", operation, err)
+	}
 }
 
 func TestInterruptedRollbackCanResumeAfterReconciliation(t *testing.T) {

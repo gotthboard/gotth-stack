@@ -10,6 +10,12 @@ records, caller idempotency keys, replay, torn-tail recovery, corruption
 refusal, cancellation limits, rollback references, and explicit
 unknown-outcome state.
 
+Mutation idempotency digests are operation-local and unique. Read-only retry
+retains the exact step/component/phase identity. Failed mutation results are
+rollback-eligible because failure does not prove that external state remained
+untouched. An operation cannot hide possibly live mutation behind an ordinary
+failed terminal; it must be rolled back or remain recovery-required.
+
 It does not own an `apply` command, adapters, network access, secret retrieval,
 Docker/systemd, a web UI, or live deployment. Completion means the journal can
 prove what was approved, what transition was durably recorded, where failure

@@ -56,10 +56,13 @@ func Create(path, installationID string) (*Journal, error) {
 	if err := syncParent(path); err != nil {
 		return nil, ErrStorage
 	}
-	failed = false
 	_ = root.Close()
 	journal, _, err := Open(path, installationID)
-	return journal, err
+	if err != nil {
+		return nil, err
+	}
+	failed = false
+	return journal, nil
 }
 
 // Open validates every filesystem object before taking the lifetime lock and
@@ -95,6 +98,9 @@ func Open(path, installationID string) (*Journal, Recovery, error) {
 		return nil, Recovery{}, ErrCorrupt
 	}
 	journal.lock = lock
+	if err := validateOpenRegularFile(lock); err != nil {
+		return nil, Recovery{}, err
+	}
 	if err := syscall.Flock(int(lock.Fd()), syscall.LOCK_EX|syscall.LOCK_NB); err != nil {
 		if errors.Is(err, syscall.EWOULDBLOCK) || errors.Is(err, syscall.EAGAIN) {
 			return nil, Recovery{}, ErrLocked
@@ -115,6 +121,9 @@ func Open(path, installationID string) (*Journal, Recovery, error) {
 		return nil, Recovery{}, ErrCorrupt
 	}
 	journal.log = log
+	if err := validateOpenRegularFile(log); err != nil {
+		return nil, Recovery{}, err
+	}
 	recovery, err := journal.replay()
 	if err != nil {
 		return nil, Recovery{}, err
@@ -208,6 +217,16 @@ func validateDirectory(root *os.Root) error {
 
 func validateRegularFile(root *os.Root, name string) error {
 	info, err := root.Lstat(name)
+	if err != nil || !info.Mode().IsRegular() || info.Mode().Perm() != 0o600 {
+		return ErrCorrupt
+	}
+	return nil
+}
+
+// validateOpenRegularFile closes the Lstat/Open race by checking the object
+// actually held by the descriptor before it can be trusted as journal state.
+func validateOpenRegularFile(file *os.File) error {
+	info, err := file.Stat()
 	if err != nil || !info.Mode().IsRegular() || info.Mode().Perm() != 0o600 {
 		return ErrCorrupt
 	}

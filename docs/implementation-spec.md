@@ -113,7 +113,7 @@ Frame version 1 is:
 N bytes  compact canonical JSON payload
 ```
 
-Payloads are at most 1 MiB so one approval can project every bounded plan
+Payloads are at most 4 MiB so one approval can project every bounded plan
 component without splitting its authority record. The log is at most 512 MiB
 and 262,144 records.
 The fixed record struct is marshaled without maps. Each payload has sequence,
@@ -163,12 +163,15 @@ mutation so replay reconstructs the same state.
 
 Every rollback step names the finished mutating step it compensates and must
 use that step's component and rollback-reference digest. Recovery-only
-mutations cannot be reported as rolled back.
+mutations cannot be reported as rolled back. Rollback may be initiated after
+rollback-eligible mutation without inventing a failure record.
 
 `FinishStep` records `succeeded` with a result digest or `failed` with a
 bounded reason code. Exact duplicate finish is idempotent; conflicting finish
 fails. Failure stores the exact phase/component/step/attempt and permits only
-rollback or an explicit failed/recovery-required terminal outcome.
+rollback or an explicit terminal outcome. Ordinary `failed` is admissible only
+before mutation begins. Once any mutation starts, a non-rolled-back operation
+must terminate as `recovery_required` because external state may remain.
 
 Cancellation is permitted only from approved or preflighting state with no
 in-flight step and before any mutation-start record. `complete` requires no

@@ -23,6 +23,32 @@ func TestFramePayloadBoundaries(t *testing.T) {
 	}
 }
 
+func TestDescriptorValidationRejectsWrongObjectAndMode(t *testing.T) {
+	directory, err := os.Open(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer directory.Close()
+	if err := validateOpenRegularFile(directory); !errors.Is(err, ErrCorrupt) {
+		t.Fatalf("directory=%v", err)
+	}
+	path := t.TempDir() + "/broad"
+	if err := os.WriteFile(path, []byte("x"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chmod(path, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	file, err := os.Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer file.Close()
+	if err := validateOpenRegularFile(file); !errors.Is(err, ErrCorrupt) {
+		t.Fatalf("mode=%v", err)
+	}
+}
+
 func TestAppendStorageFailuresPoisonHandle(t *testing.T) {
 	cases := map[string]func(*Journal){
 		"write": func(journal *Journal) {

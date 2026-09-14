@@ -121,7 +121,11 @@ result resolves the unknown outcome; otherwise the operation remains
 explicitly recovery-required. A rollback step names the finished mutating step
 it compensates, including a failed mutation that may have partially changed
 external state. Rollback references are non-secret digests or explicit
-recovery-only reason codes, never arbitrary commands or payloads.
+recovery-only reason codes, never arbitrary commands or payloads. An ordinary
+terminal failure is forbidden after any mutation starts; unresolved or
+intentionally uncompensated external state remains recovery-required.
+Rollback may be operator-initiated after a successful mutation; it does not
+require a fabricated later failure.
 
 The journal scans linearly during open and retains reconstructed operation
 summaries in memory. The alpha format caps frame and log sizes. This is honest
