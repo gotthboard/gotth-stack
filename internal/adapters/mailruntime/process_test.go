@@ -23,7 +23,7 @@ func runtimeDefinition(role Role) roleDefinition {
 	}
 	if role == RolePostfix || role == RoleDovecot {
 		definition.user = "0:0"
-		definition.capAdd = []string{"CHOWN", "DAC_OVERRIDE", "DAC_READ_SEARCH", "FOWNER", "SETGID", "SETUID"}
+		definition.capAdd = []string{"CHOWN", "DAC_OVERRIDE", "DAC_READ_SEARCH", "FOWNER", "NET_BIND_SERVICE", "SETGID", "SETUID"}
 	}
 	return definition
 }

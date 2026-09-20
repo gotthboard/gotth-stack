@@ -18,6 +18,10 @@ func OpenControlPlane(options ControlPlaneOptions) (*ControlPlane, error) {
 		{source: options.ExtensionSecretRoot, destination: extensionSecretTarget, readOnly: true, kind: mountDirectory, secret: true, revision: true},
 		{source: options.DatabaseSecretFile, destination: databaseSecretTarget, readOnly: true, kind: mountRegularFile, secret: true, revision: true},
 		{source: options.MasterSecretFile, destination: masterSecretTarget, readOnly: true, kind: mountRegularFile, secret: true, revision: true},
+		{source: options.FrontAuthSecretFile, destination: frontAuthSecretTarget, readOnly: true, kind: mountRegularFile, secret: true, revision: true},
+		{source: options.OIDCSecretFile, destination: oidcSecretTarget, readOnly: true, kind: mountRegularFile, secret: true, revision: true},
+		{source: options.PostfixHelperFile, destination: postfixHelperTarget, readOnly: true, kind: mountRegularFile, secret: true, revision: true},
+		{source: options.PostfixReleaseFile, destination: postfixReleaseTarget, readOnly: true, kind: mountRegularFile, secret: true, revision: true},
 	}
 	value, err := openAdapter(options.Runtime, RoleControlPlane, mounts, nil)
 	if err != nil {
@@ -30,6 +34,7 @@ func OpenFront(options FrontOptions) (*Front, error) {
 	mounts := []mountSpec{
 		{source: options.CertificateFile, destination: certificateTarget, readOnly: true, kind: mountRegularFile, revision: true},
 		{source: options.PrivateKeyFile, destination: privateKeyTarget, readOnly: true, kind: mountRegularFile, secret: true, revision: true},
+		{source: options.FrontAuthSecretFile, destination: frontAuthSecretTarget, readOnly: true, kind: mountRegularFile, secret: true, revision: true},
 	}
 	ports := []portSpec{{hostIP: "0.0.0.0", hostPort: 25, containerPort: 1025}, {hostIP: "0.0.0.0", hostPort: 465, containerPort: 1465}, {hostIP: "0.0.0.0", hostPort: 587, containerPort: 1587}, {hostIP: "0.0.0.0", hostPort: 143, containerPort: 1143}, {hostIP: "0.0.0.0", hostPort: 993, containerPort: 1993}}
 	value, err := openAdapter(options.Runtime, RoleFront, mounts, ports)
@@ -40,7 +45,12 @@ func OpenFront(options FrontOptions) (*Front, error) {
 }
 
 func OpenPostfix(options PostfixOptions) (*Postfix, error) {
-	value, err := openAdapter(options.Runtime, RolePostfix, []mountSpec{{source: options.QueueRoot, destination: queueTarget, kind: mountDirectory}}, nil)
+	mounts := []mountSpec{
+		{source: options.QueueRoot, destination: queueTarget, kind: mountDirectory},
+		{source: options.HelperSecretFile, destination: postfixHelperTarget, readOnly: true, kind: mountRegularFile, secret: true, revision: true},
+		{source: options.ReleaseSecretFile, destination: postfixReleaseTarget, readOnly: true, kind: mountRegularFile, secret: true, revision: true},
+	}
+	value, err := openAdapter(options.Runtime, RolePostfix, mounts, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -104,7 +114,7 @@ func openAdapter(options RuntimeOptions, role Role, mounts []mountSpec, ports []
 	definition := roleDefinition{role: role, adapterID: "mailruntime." + string(role) + ".v1", repository: roleImageRepositories[role], alias: string(role), user: "1000:1000", ports: append([]portSpec(nil), ports...)}
 	if role == RolePostfix || role == RoleDovecot {
 		definition.user = "0:0"
-		definition.capAdd = []string{"CHOWN", "DAC_OVERRIDE", "DAC_READ_SEARCH", "FOWNER", "SETGID", "SETUID"}
+		definition.capAdd = []string{"CHOWN", "DAC_OVERRIDE", "DAC_READ_SEARCH", "FOWNER", "NET_BIND_SERVICE", "SETGID", "SETUID"}
 	}
 	definition.mounts = append(definition.mounts, mountSpec{source: options.ConfigurationRoot, destination: configTarget, readOnly: true, kind: mountDirectory})
 	definition.mounts = append(definition.mounts, mounts...)

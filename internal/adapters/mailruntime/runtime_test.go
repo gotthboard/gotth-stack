@@ -214,13 +214,39 @@ func newRuntimeFixture(t *testing.T) *runtimeFixture {
 	if err != nil {
 		t.Fatal(err)
 	}
-	adapter, err := OpenPostfix(PostfixOptions{Runtime: RuntimeOptions{DockerBinary: binary, DockerBinaryDigest: digest(value), StateRoot: state, ConfigurationRoot: config, ContainerPrefix: "gotth", Timeout: 5 * time.Second}, QueueRoot: queue})
+	secretValue := []byte("value\n")
+	secretSum := sha256.Sum256(secretValue)
+	secretMembers := []revisionMember{
+		{Destination: postfixHelperTarget, Digest: "sha256:" + hex.EncodeToString(secretSum[:]), Size: int64(len(secretValue))},
+		{Destination: postfixReleaseTarget, Digest: "sha256:" + hex.EncodeToString(secretSum[:]), Size: int64(len(secretValue))},
+	}
+	encodedSecrets, err := json.Marshal(secretMembers)
+	if err != nil {
+		t.Fatal(err)
+	}
+	secretRevision := digest(encodedSecrets)
+	secretRoot := filepath.Join(root, "secret-store", strings.TrimPrefix(secretRevision, "sha256:"))
+	if err := os.MkdirAll(secretRoot, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	helperPath := filepath.Join(secretRoot, "helper-token")
+	releasePath := filepath.Join(secretRoot, "release-token")
+	for _, path := range []string{helperPath, releasePath} {
+		if err := os.WriteFile(path, secretValue, 0o400); err != nil {
+			t.Fatal(err)
+		}
+	}
+	adapter, err := OpenPostfix(PostfixOptions{Runtime: RuntimeOptions{DockerBinary: binary, DockerBinaryDigest: digest(value), StateRoot: state, ConfigurationRoot: config, ContainerPrefix: "gotth", Timeout: 5 * time.Second}, QueueRoot: queue, HelperSecretFile: helperPath, ReleaseSecretFile: releasePath})
 	if err != nil {
 		t.Fatal(err)
 	}
 	runner := &fakeRuntimeDocker{containers: make(map[string]fakeRuntimeContainer), network: true}
 	adapter.adapter.runner = runner
-	return &runtimeFixture{t: t, adapter: adapter, runner: runner, configuration: members, configDigest: configDigest, configSize: int64(len(archive)), revision: digest([]byte("[]"))}
+	revision, err := adapter.revisionDigest()
+	if err != nil {
+		t.Fatal(err)
+	}
+	return &runtimeFixture{t: t, adapter: adapter, runner: runner, configuration: members, configDigest: configDigest, configSize: int64(len(archive)), revision: revision}
 }
 
 func (fixture *runtimeFixture) close() {
@@ -475,12 +501,14 @@ func TestReplacementSupportsImmutableConfigurationRevision(t *testing.T) {
 	}
 	statePath := fixture.adapter.statePath
 	queuePath := fixture.adapter.definition.mounts[1].source
+	helperPath := fixture.adapter.definition.mounts[2].source
+	releasePath := fixture.adapter.definition.mounts[3].source
 	dockerBinary := fixture.adapter.dockerBinary
 	dockerDigest := fixture.adapter.dockerDigest
 	if err := fixture.adapter.Close(); err != nil {
 		t.Fatal(err)
 	}
-	reopened, err := OpenPostfix(PostfixOptions{Runtime: RuntimeOptions{DockerBinary: dockerBinary, DockerBinaryDigest: dockerDigest, StateRoot: statePath, ConfigurationRoot: configPath, ContainerPrefix: "gotth", Timeout: 5 * time.Second}, QueueRoot: queuePath})
+	reopened, err := OpenPostfix(PostfixOptions{Runtime: RuntimeOptions{DockerBinary: dockerBinary, DockerBinaryDigest: dockerDigest, StateRoot: statePath, ConfigurationRoot: configPath, ContainerPrefix: "gotth", Timeout: 5 * time.Second}, QueueRoot: queuePath, HelperSecretFile: helperPath, ReleaseSecretFile: releasePath})
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -49,18 +49,20 @@ func TestOpenAllTypedRoles(t *testing.T) {
 	control, err := OpenControlPlane(ControlPlaneOptions{
 		Runtime: testRuntimeOptions(t, root, "control"), DataRoot: testDirectory(t, root, "control-data"),
 		ExtensionStateRoot: testDirectory(t, root, "extension-state"), ExtensionSecretRoot: testDirectory(t, root, "extension-secrets"),
-		DatabaseSecretFile: testSecret(t, root, "database-password"), MasterSecretFile: testSecret(t, root, "master-key"),
+		DatabaseSecretFile: testSecret(t, root, "database-url"), MasterSecretFile: testSecret(t, root, "master-key"),
+		FrontAuthSecretFile: testSecret(t, root, "front-auth-token"), OIDCSecretFile: testSecret(t, root, "oidc-client-secret"),
+		PostfixHelperFile: testSecret(t, root, "postfix-helper-token"), PostfixReleaseFile: testSecret(t, root, "postfix-release-token"),
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer control.Close()
-	front, err := OpenFront(FrontOptions{Runtime: testRuntimeOptions(t, root, "front"), CertificateFile: testSecret(t, root, "certificate"), PrivateKeyFile: testSecret(t, root, "private-key")})
+	front, err := OpenFront(FrontOptions{Runtime: testRuntimeOptions(t, root, "front"), CertificateFile: testSecret(t, root, "certificate"), PrivateKeyFile: testSecret(t, root, "private-key"), FrontAuthSecretFile: testSecret(t, root, "front-auth-front-token")})
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer front.Close()
-	postfix, err := OpenPostfix(PostfixOptions{Runtime: testRuntimeOptions(t, root, "postfix"), QueueRoot: testDirectory(t, root, "queue")})
+	postfix, err := OpenPostfix(PostfixOptions{Runtime: testRuntimeOptions(t, root, "postfix"), QueueRoot: testDirectory(t, root, "queue"), HelperSecretFile: testSecret(t, root, "postfix-side-helper-token"), ReleaseSecretFile: testSecret(t, root, "postfix-side-release-token")})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -87,17 +89,19 @@ func TestOpenRejectsUnsafeBoundaries(t *testing.T) {
 	root := t.TempDir()
 	options := testRuntimeOptions(t, root, "postfix")
 	queue := testDirectory(t, root, "queue")
-	first, err := OpenPostfix(PostfixOptions{Runtime: options, QueueRoot: queue})
+	helper := testSecret(t, root, "lock-helper-token")
+	release := testSecret(t, root, "lock-release-token")
+	first, err := OpenPostfix(PostfixOptions{Runtime: options, QueueRoot: queue, HelperSecretFile: helper, ReleaseSecretFile: release})
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer first.Close()
-	if _, err := OpenPostfix(PostfixOptions{Runtime: options, QueueRoot: queue}); !errors.Is(err, ErrLocked) {
+	if _, err := OpenPostfix(PostfixOptions{Runtime: options, QueueRoot: queue, HelperSecretFile: helper, ReleaseSecretFile: release}); !errors.Is(err, ErrLocked) {
 		t.Fatalf("second open error=%v", err)
 	}
 	overlap := testRuntimeOptions(t, root, "overlap")
 	overlap.ConfigurationRoot = queue
-	if _, err := OpenPostfix(PostfixOptions{Runtime: overlap, QueueRoot: queue}); !errors.Is(err, ErrInvalidInput) {
+	if _, err := OpenPostfix(PostfixOptions{Runtime: overlap, QueueRoot: queue, HelperSecretFile: helper, ReleaseSecretFile: release}); !errors.Is(err, ErrInvalidInput) {
 		t.Fatalf("overlap error=%v", err)
 	}
 	unsafe := testRuntimeOptions(t, root, "unsafe")
@@ -105,7 +109,7 @@ func TestOpenRejectsUnsafeBoundaries(t *testing.T) {
 	if err := os.Symlink(options.StateRoot, unsafe.StateRoot); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := OpenPostfix(PostfixOptions{Runtime: unsafe, QueueRoot: testDirectory(t, root, "unsafe-queue")}); !errors.Is(err, ErrUnsafeState) {
+	if _, err := OpenPostfix(PostfixOptions{Runtime: unsafe, QueueRoot: testDirectory(t, root, "unsafe-queue"), HelperSecretFile: helper, ReleaseSecretFile: release}); !errors.Is(err, ErrUnsafeState) {
 		t.Fatalf("symlink state error=%v", err)
 	}
 }

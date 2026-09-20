@@ -16,6 +16,37 @@
 
 ## Unreleased
 
+### 2026-09-20 13:34 CDT — Bind Mail runtime adapters to production secrets and ports
+
+Commit: `current commit; hash assigned by Git after commit`
+
+Affected files:
+
+- `internal/adapters/mailruntime/model.go`;
+- `internal/adapters/mailruntime/open_linux.go`;
+- Mail runtime adapter unit, process, and lifecycle tests;
+- `docs/CHANGELOG.md`.
+
+Explanation:
+
+Aligned the typed runtime adapters with the production GOTTH Mail image
+contract. The control plane now receives the complete database URL, OIDC
+client secret, front-auth credential, extension master key, and distinct
+Postfix helper/release credentials through immutable read-only files. The
+front receives its matching auth credential, and Postfix receives its two
+independent queue credentials. The stale database-password target was
+corrected to the file interface the product actually reads. Postfix and
+Dovecot receive the explicit `NET_BIND_SERVICE` capability required by their
+native private ports; all other dropped-capability, read-only-root,
+no-new-privileges, revision-digest, and rollback constraints remain intact.
+
+Verification:
+
+- focused serial and race tests pass for `internal/adapters/mailruntime`;
+- focused vet passes;
+- immutable multi-secret revision tests and replacement rollback pass;
+- `git diff --check` passes.
+
 ### 2026-09-14 — Complete the Authentik runtime adapter slice
 
 Add a digest-pinned Authentik 2026.5 server/worker adapter with direct

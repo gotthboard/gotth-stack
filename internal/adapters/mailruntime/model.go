@@ -39,8 +39,12 @@ const (
 	controlDataTarget     = "/var/lib/gotth-mail"
 	extensionStateTarget  = "/var/lib/gotth-mail/extensions"
 	extensionSecretTarget = "/run/secrets/extensions"
-	databaseSecretTarget  = "/run/secrets/database-password"
+	databaseSecretTarget  = "/run/secrets/database-url"
 	masterSecretTarget    = "/run/secrets/master-key"
+	frontAuthSecretTarget = "/run/secrets/front-auth-token"
+	oidcSecretTarget      = "/run/secrets/oidc-client-secret"
+	postfixHelperTarget   = "/run/secrets/postfix-helper-token"
+	postfixReleaseTarget  = "/run/secrets/postfix-release-token"
 	certificateTarget     = "/run/gotth-mail/tls/certificate.pem"
 	privateKeyTarget      = "/run/gotth-mail/tls/private-key.pem"
 	queueTarget           = "/var/spool/postfix"
@@ -84,17 +88,24 @@ type ControlPlaneOptions struct {
 	ExtensionSecretRoot string
 	DatabaseSecretFile  string
 	MasterSecretFile    string
+	FrontAuthSecretFile string
+	OIDCSecretFile      string
+	PostfixHelperFile   string
+	PostfixReleaseFile  string
 }
 
 type FrontOptions struct {
-	Runtime         RuntimeOptions
-	CertificateFile string
-	PrivateKeyFile  string
+	Runtime             RuntimeOptions
+	CertificateFile     string
+	PrivateKeyFile      string
+	FrontAuthSecretFile string
 }
 
 type PostfixOptions struct {
-	Runtime   RuntimeOptions
-	QueueRoot string
+	Runtime           RuntimeOptions
+	QueueRoot         string
+	HelperSecretFile  string
+	ReleaseSecretFile string
 }
 
 type DovecotOptions struct {
