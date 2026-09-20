@@ -16,7 +16,7 @@
 
 ## Unreleased
 
-### 2026-09-20 14:56 CDT — Prove real Rspamd replacement and preserve mutable mount identity
+### 2026-09-20 16:19 CDT — Prove exact Rspamd replacement and close the release identity
 
 Commit: `current commit; hash assigned by Git after commit`
 
@@ -25,8 +25,13 @@ Affected files:
 - `Makefile`;
 - `internal/adapters/mailruntime/bindings_linux.go`;
 - `internal/adapters/mailruntime/integration_test.go`;
+- `internal/adapters/mailruntime/manifest.go`;
+- `internal/adapters/mailruntime/manifest_test.go`;
 - `internal/adapters/mailruntime/process_test.go`;
 - `internal/adapters/mailruntime/runtime_test.go`;
+- `workflow/features/v3-mail-stack/runtime-adapters/**`;
+- `workflow.toml`;
+- `workflow.events.jsonl`;
 - `docs/CHANGELOG.md`.
 
 Explanation:
@@ -37,6 +42,18 @@ digest-bound production Rspamd image through the typed adapter, replaces its
 controller-secret revision, closes and reopens the adapter after mutation,
 then rolls back to the previous running container while retaining durable
 Bayes state.
+
+Rejected the prior cached-image run because its claimed source commit did not
+exist. The replacement proof uses Mail source
+`12dbe59973cba53e52d56437f21424b2ec53f3c8`, exact Rspamd image digest
+`sha256:fe7b4f7a3db8ce9c453ad7585e1a752fbd109b5d36d7a35c2c236bd33d457fca`,
+canonical manifest SHA-256
+`d1f9886faa654a037aa2f0437ef52c982c91131a93e4969ad225fb9d0780aa08`,
+and configuration archive SHA-256
+`fa03341166fea00adef9e01d53816d982b103639f80ab9861f7b7f85d28fd331`.
+Stack's closed manifest schema now consumes and validates Mail's required
+positive source build epoch instead of rejecting the exact artifact as an
+unknown field.
 
 The repository gate now has a dedicated Mail target that enforces the fixed
 process boundary, rejects shell/generic apply/image-pull/destructive-volume
@@ -56,8 +73,8 @@ Verification:
 - the mutable-directory regression permits content creation after staging;
 - the existing inode-replacement regression still rejects a substituted
   directory;
-- the real production Rspamd install/replacement/reopen/rollback proof passes
-  on the development host in 47.8 seconds and preserves its SQLite Bayes file;
+- the exact production Rspamd install/replacement/reopen/rollback proof passes
+  on the development host in 50.70 seconds and preserves its SQLite Bayes file;
 - Mail's release assembler produces identical artifacts twice, and Stack
   accepts the exact manifest plus all eight archive members.
 
