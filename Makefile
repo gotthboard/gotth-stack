@@ -1,6 +1,6 @@
-.PHONY: verify verify-web verify-caddy verify-postgresql verify-authentik coverage build frontend-dependencies generate-web
+.PHONY: verify verify-web verify-caddy verify-postgresql verify-authentik verify-mail coverage build frontend-dependencies generate-web
 
-verify: verify-web verify-caddy verify-postgresql verify-authentik
+verify: verify-web verify-caddy verify-postgresql verify-authentik verify-mail
 	version="$$(go env GOVERSION)"; test "$${version%%-*}" = "go1.26.6"
 	test -z "$$(gofmt -l $$(git ls-files --cached --others --exclude-standard -- '*.go'))"
 	go vet -mod=readonly ./...
@@ -32,6 +32,14 @@ verify-authentik:
 	test -z "$$(rg -n --glob '*.go' --glob '!*_test.go' 'gotth-stack/pkg/journal|func .*Apply|\"apply\"' internal/adapters/authentik cmd/gotth-stack)"
 	go vet -mod=readonly ./internal/adapters/authentik
 	go test -mod=readonly -race -cover ./internal/adapters/authentik
+
+verify-mail:
+	version="$$(go env GOVERSION)"; test "$${version%%-*}" = "go1.26.6"
+	test "$$(rg -l --glob '*.go' --glob '!*_test.go' 'os/exec|exec\.Command' internal/adapters/mailruntime)" = "internal/adapters/mailruntime/process.go"
+	test -z "$$(rg -n --glob '*.go' --glob '!*_test.go' 'systemctl|/bin/(sh|bash)|docker[[:space:]]+pull|volume[[:space:]]+(rm|prune)|/var/run/docker\.sock:|fmt\.(Errorf|Sprintf)' internal/adapters/mailruntime)"
+	test -z "$$(rg -n --glob '*.go' --glob '!*_test.go' 'gotth-stack/pkg/journal|func .*Apply|"apply"' internal/adapters/mailruntime cmd/gotth-stack)"
+	go vet -mod=readonly ./internal/adapters/mailruntime
+	go test -mod=readonly -race -cover ./internal/adapters/mailruntime
 
 verify-web: generate-web
 	version="$$(go env GOVERSION)"; test "$${version%%-*}" = "go1.26.6"

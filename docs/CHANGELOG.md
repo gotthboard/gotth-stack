@@ -16,6 +16,50 @@
 
 ## Unreleased
 
+### 2026-09-20 14:56 CDT — Prove real Rspamd replacement and preserve mutable mount identity
+
+Commit: `current commit; hash assigned by Git after commit`
+
+Affected files:
+
+- `Makefile`;
+- `internal/adapters/mailruntime/bindings_linux.go`;
+- `internal/adapters/mailruntime/integration_test.go`;
+- `internal/adapters/mailruntime/runtime_test.go`;
+- `docs/CHANGELOG.md`.
+
+Explanation:
+
+Added an opt-in disposable integration proof that consumes Mail's exact
+canonical release manifest and configuration archive, installs the
+digest-bound production Rspamd image through the typed adapter, replaces its
+controller-secret revision, closes and reopens the adapter after mutation,
+then rolls back to the previous running container while retaining durable
+Bayes state.
+
+The repository gate now has a dedicated Mail target that enforces the fixed
+process boundary, rejects shell/generic apply/image-pull/destructive-volume
+paths in production source, and runs focused vet, race, and coverage checks on
+every full verification.
+
+The proof exposed a false conflict in mount identity. Directory identity
+included `st_size`, but a writable persistent directory legitimately changes
+size when its daemon creates state. Directory bindings now retain device,
+inode, owner, group, and mode while ignoring content-dependent size. Regular
+files still retain size in their identity, and directory replacement remains
+rejected.
+
+Verification:
+
+- focused Mail runtime serial, race, and vet checks pass;
+- the mutable-directory regression permits content creation after staging;
+- the existing inode-replacement regression still rejects a substituted
+  directory;
+- the real production Rspamd install/replacement/reopen/rollback proof passes
+  on the development host in 47.8 seconds and preserves its SQLite Bayes file;
+- Mail's release assembler produces identical artifacts twice, and Stack
+  accepts the exact manifest plus all eight archive members.
+
 ### 2026-09-20 14:25 CDT — Admit Dovecot's bounded login chroot
 
 Commit: `current commit; hash assigned by Git after commit`

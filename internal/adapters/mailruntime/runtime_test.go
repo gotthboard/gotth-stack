@@ -467,6 +467,23 @@ func TestMutationRejectsMountReplacement(t *testing.T) {
 	}
 }
 
+func TestMutationAllowsContentsInsideMutableDirectory(t *testing.T) {
+	fixture := newRuntimeFixture(t)
+	defer fixture.close()
+	candidate := fixture.candidate("mutable-directory", "a", "b")
+	prepared, _ := fixture.preflight(candidate)
+	if _, err := prepared.Stage(); err != nil {
+		t.Fatal(err)
+	}
+	queue := fixture.adapter.definition.mounts[1].source
+	if err := os.WriteFile(filepath.Join(queue, "runtime-owned-state"), []byte("state"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := fixture.adapter.CreateCandidate(context.Background(), candidate.OperationID); err != nil {
+		t.Fatalf("mutable directory contents changed mount identity: %v", err)
+	}
+}
+
 func TestStageIdempotenceConflictAndRollback(t *testing.T) {
 	fixture := newRuntimeFixture(t)
 	defer fixture.close()

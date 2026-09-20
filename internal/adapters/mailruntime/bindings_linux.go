@@ -30,7 +30,7 @@ func (adapter *adapter) captureMountIdentities() ([]mountIdentity, error) {
 		if err != nil {
 			return nil, ErrUnsafeState
 		}
-		result = append(result, mountIdentity{Destination: adapter.definition.mounts[index].destination, Identity: identityJSON(info)})
+		result = append(result, mountIdentity{Destination: adapter.definition.mounts[index].destination, Identity: mountIdentityJSON(info)})
 	}
 	return result, nil
 }
@@ -45,7 +45,7 @@ func (adapter *adapter) verifyMountIdentities(expected []mountIdentity) error {
 		}
 		opened, err := adapter.mountFiles[index].Stat()
 		current, pathErr := os.Lstat(mount.source)
-		if err != nil || pathErr != nil || !os.SameFile(opened, current) || expected[index].Identity != identityJSON(opened) || expected[index].Identity != identityJSON(current) {
+		if err != nil || pathErr != nil || !os.SameFile(opened, current) || expected[index].Identity != mountIdentityJSON(opened) || expected[index].Identity != mountIdentityJSON(current) {
 			return ErrConflict
 		}
 	}
@@ -245,6 +245,14 @@ func identityJSON(info os.FileInfo) fileIdentityJSON {
 		return fileIdentityJSON{}
 	}
 	return fileIdentityJSON{Device: uint64(stat.Dev), Inode: stat.Ino, UID: stat.Uid, GID: stat.Gid, Mode: uint32(info.Mode().Perm()), Size: info.Size()}
+}
+
+func mountIdentityJSON(info os.FileInfo) fileIdentityJSON {
+	identity := identityJSON(info)
+	if info.IsDir() {
+		identity.Size = 0
+	}
+	return identity
 }
 
 func sameIdentities(left, right []mountIdentity) bool {
