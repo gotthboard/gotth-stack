@@ -59,10 +59,13 @@ func validateStepInput(input StepInput) error {
 	if input.Phase == PhasePreflight && input.Mode != ModeReadOnly {
 		return ErrInvalidInput
 	}
-	if (input.Phase == PhaseApply || input.Phase == PhaseRollback) && input.Mode != ModeMutation {
+	if input.Phase == PhaseApply && input.Mode != ModeMutation {
 		return ErrInvalidInput
 	}
 	if input.Phase == PhaseVerify && input.Mode != ModeReadOnly {
+		return ErrInvalidInput
+	}
+	if input.Phase == PhaseRollback && input.Mode != ModeReadOnly && input.Mode != ModeMutation {
 		return ErrInvalidInput
 	}
 	if input.Phase != PhasePreflight && input.Phase != PhaseApply && input.Phase != PhaseVerify && input.Phase != PhaseRollback {
@@ -81,7 +84,10 @@ func validateStepInput(input StepInput) error {
 		return ErrInvalidInput
 	}
 	if input.Phase == PhaseRollback {
-		if !validID(input.CompensatesStepID) || input.Rollback.RecoveryOnlyReason != "" {
+		if input.Mode == ModeMutation && (!validID(input.CompensatesStepID) || input.Rollback.RecoveryOnlyReason != "") {
+			return ErrInvalidInput
+		}
+		if input.Mode == ModeReadOnly && input.CompensatesStepID != "" {
 			return ErrInvalidInput
 		}
 	} else if input.CompensatesStepID != "" {

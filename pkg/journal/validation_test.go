@@ -47,6 +47,7 @@ func TestInputValidationBoundaries(t *testing.T) {
 		{OperationID: "operation-a", StepID: "apply-a", ComponentID: "database", Phase: PhaseApply, Mode: ModeMutation, Attempt: 1, IdempotencyDigest: digestA, Rollback: RollbackPolicy{ReferenceDigest: digestB}},
 		{OperationID: "operation-a", StepID: "apply-a", ComponentID: "database", Phase: PhaseApply, Mode: ModeMutation, Attempt: 1, IdempotencyDigest: digestA, Rollback: RollbackPolicy{RecoveryOnlyReason: RecoveryExternal}},
 		{OperationID: "operation-a", StepID: "rollback-a", ComponentID: "database", Phase: PhaseRollback, Mode: ModeMutation, Attempt: 1, IdempotencyDigest: digestA, Rollback: RollbackPolicy{ReferenceDigest: digestB}, CompensatesStepID: "apply-a"},
+		{OperationID: "operation-a", StepID: "rollback-verify-a", ComponentID: "database", Phase: PhaseRollback, Mode: ModeReadOnly, Attempt: 1},
 	}
 	for _, input := range validSteps {
 		if err := validateStepInput(input); err != nil {
@@ -63,6 +64,7 @@ func TestInputValidationBoundaries(t *testing.T) {
 		{OperationID: "operation-a", StepID: "step-a", ComponentID: "database", Phase: PhaseApply, Mode: ModeMutation, Attempt: 1, IdempotencyDigest: digestA, Rollback: RollbackPolicy{ReferenceDigest: digestB, RecoveryOnlyReason: RecoveryExternal}},
 		{OperationID: "operation-a", StepID: "step-a", ComponentID: "database", Phase: PhaseVerify, Mode: ModeReadOnly, Attempt: 1, IdempotencyDigest: digestA},
 		{OperationID: "operation-a", StepID: "step-a", ComponentID: "database", Phase: PhaseRollback, Mode: ModeMutation, Attempt: 1, IdempotencyDigest: digestA, Rollback: RollbackPolicy{ReferenceDigest: digestB}},
+		{OperationID: "operation-a", StepID: "step-a", ComponentID: "database", Phase: PhaseRollback, Mode: ModeReadOnly, Attempt: 1, CompensatesStepID: "apply-a"},
 		{OperationID: "operation-a", StepID: "step-a", ComponentID: "database", Phase: PhaseApply, Mode: ModeMutation, Attempt: 1, IdempotencyDigest: digestA, Rollback: RollbackPolicy{ReferenceDigest: digestB}, CompensatesStepID: "other"},
 	}
 	for index, input := range invalidSteps {

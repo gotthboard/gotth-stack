@@ -1,6 +1,6 @@
-.PHONY: verify verify-web verify-caddy verify-postgresql verify-authentik verify-mail coverage build frontend-dependencies generate-web
+.PHONY: verify verify-web verify-caddy verify-postgresql verify-authentik verify-mail verify-controller coverage build frontend-dependencies generate-web
 
-verify: verify-web verify-caddy verify-postgresql verify-authentik verify-mail
+verify: verify-web verify-caddy verify-postgresql verify-authentik verify-mail verify-controller
 	version="$$(go env GOVERSION)"; test "$${version%%-*}" = "go1.26.6"
 	test -z "$$(gofmt -l $$(git ls-files --cached --others --exclude-standard -- '*.go'))"
 	go vet -mod=readonly ./...
@@ -40,6 +40,14 @@ verify-mail:
 	test -z "$$(rg -n --glob '*.go' --glob '!*_test.go' 'gotth-stack/pkg/journal|func .*Apply|"apply"' internal/adapters/mailruntime cmd/gotth-stack)"
 	go vet -mod=readonly ./internal/adapters/mailruntime
 	go test -mod=readonly -race -cover ./internal/adapters/mailruntime
+
+verify-controller:
+	version="$$(go env GOVERSION)"; test "$${version%%-*}" = "go1.26.6"
+	test -z "$$(rg -n --glob '*.go' --glob '!*_test.go' 'os/exec|exec\.Command|plugin\.Open|/bin/(sh|bash)|reflect\.Call|unsafe\.' internal/controller)"
+	test -z "$$(rg -n --glob '*.go' --glob '!*_test.go' 'type .*Command|Arguments \[\]string|Environment \[\]string|AdapterPath|ExecutablePath' internal/controller)"
+	test -z "$$(rg -n --glob '*.go' --glob '!*_test.go' 'func .*Apply|"apply"' cmd/gotth-stack)"
+	go vet -mod=readonly ./internal/controller ./pkg/journal
+	go test -mod=readonly -race -cover ./internal/controller ./pkg/journal
 
 verify-web: generate-web
 	version="$$(go env GOVERSION)"; test "$${version%%-*}" = "go1.26.6"

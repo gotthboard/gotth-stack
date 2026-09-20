@@ -366,6 +366,12 @@ func (journal *Journal) validateStepTransition(operation *Operation, step Step) 
 		if !operation.RollbackStarted || operation.State != StateRollingBack {
 			return ErrInvalidTransition
 		}
+		if step.Mode == ModeReadOnly {
+			if !componentRollbackComplete(operation, step.ComponentID) {
+				return ErrInvalidTransition
+			}
+			break
+		}
 		original := latestRollbackEligibleMutation(operation, step.CompensatesStepID)
 		if original == nil || original.ComponentID != step.ComponentID || original.Rollback.ReferenceDigest != step.Rollback.ReferenceDigest || compensated(operation, original.StepID) {
 			return ErrInvalidTransition
@@ -460,6 +466,20 @@ func compensated(operation *Operation, stepID string) bool {
 	return false
 }
 
+func componentRollbackComplete(operation *Operation, componentID string) bool {
+	found := false
+	for _, step := range operation.Steps {
+		if step.ComponentID != componentID || step.Phase != PhaseApply || step.Mode != ModeMutation || step.Status == StepRunning {
+			continue
+		}
+		found = true
+		if step.Rollback.ReferenceDigest == "" || !compensated(operation, step.StepID) {
+			return false
+		}
+	}
+	return found
+}
+
 func hasRollbackCandidate(operation *Operation) bool {
 	for _, step := range operation.Steps {
 		if step.Phase == PhaseApply && step.Mode == ModeMutation && step.Status != StepRunning && step.Rollback.ReferenceDigest != "" && !compensated(operation, step.StepID) {
@@ -501,17 +521,30 @@ func canReportRolledBack(operation *Operation) bool {
 	if !operation.RollbackStarted || operation.State != StateRollingBack || inFlight(operation) != nil {
 		return false
 	}
+	verified := make(map[string]struct{})
+	mutated := make(map[string]struct{})
 	for _, step := range operation.Steps {
 		if step.Phase == PhaseApply && step.Mode == ModeMutation && step.Rollback.RecoveryOnlyReason != "" {
 			return false
 		}
+		if step.Phase == PhaseApply && step.Mode == ModeMutation && step.Status != StepRunning {
+			mutated[step.ComponentID] = struct{}{}
+		}
 		if step.Phase == PhaseRollback && step.Status == StepFailed {
 			return false
+		}
+		if step.Phase == PhaseRollback && step.Mode == ModeReadOnly && step.Status == StepSucceeded {
+			verified[step.ComponentID] = struct{}{}
 		}
 		if step.Phase == PhaseApply && step.Mode == ModeMutation && step.Status != StepRunning {
 			if step.Rollback.RecoveryOnlyReason != "" || !compensated(operation, step.StepID) {
 				return false
 			}
+		}
+	}
+	for componentID := range mutated {
+		if _, ok := verified[componentID]; !ok {
+			return false
 		}
 	}
 	return true

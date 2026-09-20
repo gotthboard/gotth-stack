@@ -16,6 +16,25 @@
 
 ## Unreleased
 
+### 2026-09-20 — Bind controller authority to typed adapters
+
+- Added the closed controller registry for Caddy, PostgreSQL, Authentik, the
+  five GOTTH Mail roles, and the separate fixed mail-network bootstrap.
+- Bound exact plan capabilities and secret-slot revision digests into the
+  durable approval before any preflight or effect. Adapter-provided secret
+  files remain typed file references; the controller stores only revisions.
+- Split read-only preflight inspection from private transaction staging so
+  each adapter call has its own write-before-effect journal record.
+- Added exact observation classification, fixed failure reasons, reverse
+  rollback coordination, post-rollback read-only verification, and restart
+  reconciliation that never retries an interrupted mutation.
+- Network creation is a separate recovery-only operation because the runtime
+  adapter has no honest destructive inverse. Role replacement requires the
+  fixed network to exist and remains fully rollbackable.
+- The command-line surface remains read-only (`validate` and `plan`); no
+  arbitrary adapter, command, argument, path, environment, or live-deployment
+  input was added.
+
 ### 2026-09-20 16:19 CDT — Prove exact Rspamd replacement and close the release identity
 
 Commit: `current commit; hash assigned by Git after commit`

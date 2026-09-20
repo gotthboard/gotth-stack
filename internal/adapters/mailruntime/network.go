@@ -2,6 +2,23 @@ package mailruntime
 
 import "context"
 
+// ObserveNetwork reports the fixed role network without creating it. The
+// controller uses this before durable mutation intent and during recovery.
+func (value *ControlPlane) ObserveNetwork(ctx context.Context) (NetworkSummary, bool, error) {
+	adapter := value.adapter
+	adapter.mu.Lock()
+	defer adapter.mu.Unlock()
+	if adapter.closed {
+		return NetworkSummary{}, false, ErrClosed
+	}
+	bounded, cancel, err := adapter.boundedContext(ctx)
+	if err != nil {
+		return NetworkSummary{}, false, err
+	}
+	defer cancel()
+	return adapter.inspectNetwork(bounded)
+}
+
 // EnsureNetwork creates only the fixed role network and is exposed only by the
 // control-plane adapter. The controller must journal intent before calling it.
 func (value *ControlPlane) EnsureNetwork(ctx context.Context) (NetworkSummary, error) {

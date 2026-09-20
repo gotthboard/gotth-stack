@@ -220,6 +220,7 @@ func TestInterruptedMutationRequiresReconciliationAndRollback(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	finishReadOnly(t, reopened, operation.ID, "verify-rollback-database", "database", PhaseRollback, 1)
 	operation, err = reopened.FinishOperation(operation.ID, OutcomeRolledBack)
 	if err != nil || operation.State != StateRolledBack {
 		t.Fatalf("rolled back state=%q err=%v", operation.State, err)

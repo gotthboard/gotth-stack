@@ -193,6 +193,24 @@ type runtimeFixture struct {
 	revision      string
 }
 
+func TestControlPlaneObservesNetworkWithoutCreatingIt(t *testing.T) {
+	runner := &fakeRuntimeDocker{containers: make(map[string]fakeRuntimeContainer)}
+	binary := "/usr/bin/true"
+	binaryValue, err := os.ReadFile(binary)
+	if err != nil {
+		t.Fatal(err)
+	}
+	value := &ControlPlane{adapter: &adapter{dockerBinary: binary, dockerDigest: digest(binaryValue), network: "gotth-private", timeout: time.Second, runner: runner}}
+	if summary, exists, err := value.ObserveNetwork(context.Background()); err != nil || exists || summary != (NetworkSummary{}) || runner.network {
+		t.Fatalf("absent summary=%#v exists=%v network=%v err=%v", summary, exists, runner.network, err)
+	}
+	runner.network = true
+	summary, exists, err := value.ObserveNetwork(context.Background())
+	if err != nil || !exists || summary.Name != "gotth-private" || summary.Digest == "" {
+		t.Fatalf("present summary=%#v exists=%v err=%v", summary, exists, err)
+	}
+}
+
 func newRuntimeFixture(t *testing.T) *runtimeFixture {
 	t.Helper()
 	root := t.TempDir()

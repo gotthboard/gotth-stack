@@ -88,6 +88,19 @@ as such. Runtime/container, route, configuration, migration, and restore calls
 are mutations. The CLI does not accept arbitrary adapter names, commands,
 arguments, paths, or environment variables.
 
+The fixed mail network is bootstrapped in its own approved operation before
+role preflight. Network creation is recovery-only because deleting a shared
+network is not an honest generic inverse. The role operation therefore never
+smuggles network creation into preflight and remains independently
+rollbackable.
+
+Rollback compensates components in reverse dependency order and uses each
+typed adapter's fixed safe action order. A successful compensation set is not
+terminal until a read-only previous-state verification step succeeds for each
+mutated component. On restart, an interrupted read-only call receives a new
+attempt; an interrupted mutation is only observed and classified, never
+invoked again.
+
 ## Production artifact contract
 
 GOTTH Mail must publish prebuilt images and complete configuration templates.

@@ -266,6 +266,7 @@ func TestInterruptedRollbackCanResumeAfterReconciliation(t *testing.T) {
 	if operation.State != StateRollingBack {
 		t.Fatalf("replayed rollback=%#v", operation)
 	}
+	finishReadOnly(t, reopened, operation.ID, "verify-rollback-database", "database", PhaseRollback, 1)
 	operation, err = reopened.FinishOperation(operation.ID, OutcomeRolledBack)
 	if err != nil || operation.State != StateRolledBack {
 		t.Fatalf("terminal=%#v err=%v", operation, err)
@@ -327,6 +328,10 @@ func TestFailedMutationStillRequiresCompensation(t *testing.T) {
 	if _, err := journal.FinishStep(StepResultInput{OperationID: operation.ID, StepID: "rollback-database", Attempt: 1, Status: StepSucceeded, ResultDigest: digestC}); err != nil {
 		t.Fatal(err)
 	}
+	if _, err := journal.FinishOperation(operation.ID, OutcomeRolledBack); !errors.Is(err, ErrInvalidTransition) {
+		t.Fatalf("rollback without verification=%v", err)
+	}
+	finishReadOnly(t, journal, operation.ID, "verify-rollback-database", "database", PhaseRollback, 1)
 	operation, err = journal.FinishOperation(operation.ID, OutcomeRolledBack)
 	if err != nil || operation.State != StateRolledBack {
 		t.Fatalf("operation=%#v err=%v", operation, err)

@@ -182,10 +182,12 @@ Cancellation is permitted only from approved or preflighting state with no
 in-flight step and before any mutation-start record. `complete` requires no
 in-flight step, no failure, a successful verify step for every approved
 component, and no unresolved mutating step. `rolled_back` requires rollback to
-have started, no in-flight step, no failed rollback step, and a successful
+have started, no in-flight step, no failed rollback step, a successful
 compensating step for every finished mutation that declared rollback
-available. A failed mutation result is conservatively treated as possibly
-partial external work.
+available, and a later successful read-only rollback verification for every
+mutated component. Read-only rollback verification can start only after that
+component's compensation set is complete. A failed mutation result is
+conservatively treated as possibly partial external work.
 
 `ActiveOperation` returns the sole unfinished operation, if present, and
 `Approval` returns the immutable authority projection it names. Both return
