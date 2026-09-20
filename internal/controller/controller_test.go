@@ -28,6 +28,8 @@ type fakeMechanism struct {
 	crashAction         string
 	crashPreflightOnce  bool
 	observationFailures int
+	label               string
+	events              *[]string
 	journal             *journal.Journal
 	operationID         string
 	t                   *testing.T
@@ -43,6 +45,9 @@ func (fake *fakeMechanism) observation() []byte {
 
 func (fake *fakeMechanism) mutate(name string, target int) func(context.Context, string) error {
 	return func(_ context.Context, operationID string) error {
+		if fake.events != nil {
+			*fake.events = append(*fake.events, fake.label+":"+name)
+		}
 		operation, err := fake.journal.Operation(operationID)
 		if err != nil || len(operation.Steps) == 0 || operation.Steps[len(operation.Steps)-1].Status != journal.StepRunning {
 			fake.t.Fatalf("effect ran without durable running intent: operation=%#v err=%v", operation, err)
@@ -193,6 +198,56 @@ func TestKnownApplyFailureRollsBackInReverseAndVerifies(t *testing.T) {
 	last := operation.Steps[len(operation.Steps)-1]
 	if last.Phase != journal.PhaseRollback || last.Mode != journal.ModeReadOnly || last.Status != journal.StepSucceeded {
 		t.Fatalf("last step=%#v", last)
+	}
+}
+
+func TestDependentComponentsRollbackInReversePlanOrder(t *testing.T) {
+	root := filepath.Join(t.TempDir(), "journal")
+	j, err := journal.Create(root, "installation-a")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer j.Close()
+	events := []string{}
+	proxyMechanism := &fakeMechanism{label: "proxy", events: &events}
+	databaseMechanism := &fakeMechanism{label: "database", events: &events, failAction: "activate"}
+	proxy := fakeBinding(t, j, proxyMechanism)
+	proxy.artifactDigest = testDigest("proxy-artifact")
+	proxy.configurationDigest = testDigest("proxy-configuration")
+	database := fakeBinding(t, j, databaseMechanism)
+	database.componentID = "database"
+	database.adapterID = AdapterPostgreSQL
+	database.capabilities = []string{"runtime.replace"}
+	database.artifactDigest = testDigest("database-artifact")
+	database.configurationDigest = testDigest("database-configuration")
+	manifest := stack.Manifest{SchemaVersion: stack.SchemaVersion, Name: "test-stack", Components: []stack.Component{
+		{ID: "proxy", Adapter: AdapterCaddy, Artifact: stack.Artifact{Source: "oci://example.test/proxy", Digest: proxy.artifactDigest}, ConfigurationDigest: proxy.configurationDigest, Capabilities: proxy.capabilities, SecretSlots: []string{}, DependsOn: []string{}},
+		{ID: "database", Adapter: AdapterPostgreSQL, Artifact: stack.Artifact{Source: "oci://example.test/database", Digest: database.artifactDigest}, ConfigurationDigest: database.configurationDigest, Capabilities: database.capabilities, SecretSlots: []string{}, DependsOn: []string{"proxy"}},
+	}}
+	plan, err := stack.BuildPlan(manifest)
+	if err != nil {
+		t.Fatal(err)
+	}
+	controller, err := New(j, plan, journal.ApprovalInput{ID: "approval-a", ActorID: "operator-a", AuthorityDigest: testDigest("authority"), ExpiresAt: time.Now().Add(time.Hour), SecretRevisions: []journal.SecretRevision{}}, Bindings{Caddy: proxy, PostgreSQL: database})
+	if err != nil {
+		t.Fatal(err)
+	}
+	operation, err := controller.Execute(context.Background(), ExecuteInput{OperationID: "operation-a"})
+	if !errors.Is(err, ErrAdapter) || operation.State != journal.StateRolledBack || proxyMechanism.state != 1 || databaseMechanism.state != 1 {
+		t.Fatalf("operation=%#v proxy=%d database=%d err=%v", operation, proxyMechanism.state, databaseMechanism.state, err)
+	}
+	position := func(want string) int {
+		for index, event := range events {
+			if event == want {
+				return index
+			}
+		}
+		return -1
+	}
+	databaseRollback := position("database:reactivate")
+	proxyRollback := position("proxy:reactivate")
+	if databaseRollback < 0 || proxyRollback < 0 || databaseRollback >= proxyRollback {
+		t.Fatalf("rollback order=%v", events)
 	}
 }
 
