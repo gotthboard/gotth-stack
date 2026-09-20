@@ -62,6 +62,7 @@ type Result struct {
 
 type artifactPins struct {
 	Archive, Manifest, Executable, ConfigMetadata, License string
+	PublicationAvailable                                   bool
 }
 
-var expectedPins = artifactPins{Archive: ExpectedArchiveSHA256, Manifest: ExpectedManifestSHA256, Executable: ExpectedExecutableSHA256, ConfigMetadata: ExpectedConfigMetadataSHA256, License: ExpectedLicenseSHA256}
+var expectedPins = artifactPins{Archive: ExpectedArchiveSHA256, Manifest: ExpectedManifestSHA256, Executable: ExpectedExecutableSHA256, ConfigMetadata: ExpectedConfigMetadataSHA256, License: ExpectedLicenseSHA256, PublicationAvailable: false}

@@ -123,6 +123,7 @@ func TestVerifyAndAdmitCandidateAndPublished(t *testing.T) {
 		t.Fatalf("binding mismatch: %+v", binding)
 	}
 	request.Distribution, request.GitHubCommit = DistributionPublished, ExpectedSourceCommit
+	pins.PublicationAvailable = true
 	published, err := verifyAndAdmit(bytes.NewReader(archive), request, pins)
 	if err != nil {
 		t.Fatal(err)
@@ -141,6 +142,16 @@ func TestProductionPinsRejectSyntheticArtifact(t *testing.T) {
 	archive, _ := testArtifact(t, "")
 	if _, err := VerifyAndAdmit(bytes.NewReader(archive), testRequest()); !errors.Is(err, ErrInvalidArtifact) {
 		t.Fatalf("synthetic artifact: %v", err)
+	}
+}
+
+func TestProductionProfileRejectsUnpublishedDistribution(t *testing.T) {
+	t.Parallel()
+	request := testRequest()
+	request.Distribution = DistributionPublished
+	request.GitHubCommit = ExpectedSourceCommit
+	if validRequest(request, expectedPins.PublicationAvailable) {
+		t.Fatal("unpublished production profile accepted published distribution")
 	}
 }
 
@@ -174,14 +185,14 @@ func TestRequestRejectionMatrix(t *testing.T) {
 		value.Zones = append([]string(nil), base.Zones...)
 		value.RecordTypes = append([]string(nil), base.RecordTypes...)
 		mutate(&value)
-		if validRequest(value) {
+		if validRequest(value, false) {
 			t.Fatalf("invalid request %d accepted", i)
 		}
 	}
 	published := base
 	published.Distribution = DistributionPublished
 	published.GitHubCommit = ExpectedSourceCommit
-	if !validRequest(published) {
+	if !validRequest(published, true) {
 		t.Fatal("published parity rejected")
 	}
 }

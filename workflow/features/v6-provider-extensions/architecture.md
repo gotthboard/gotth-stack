@@ -40,9 +40,12 @@ four members exactly.
 The distribution proof contains two fixed repository URLs and a status enum.
 `candidate` requires the exact Forgejo commit and an empty GitHub commit;
 `published` requires both commits to equal the pinned source commit. This is
-data validation, not a network lookup; release tooling must supply retained
-remote evidence. Candidate conformance can run without publication, but only
-`published` can become release-ready.
+data validation, not a network lookup. The closed production profile also
+compiles a publication-availability pin from retained remote evidence. That
+pin is false while the GitHub repository is absent, so a caller cannot promote
+the candidate by merely repeating the expected commit. Candidate conformance
+can run without publication; release-ready admission requires a later reviewed
+profile update backed by retained cross-forge evidence.
 
 Foundation negotiation selects only granted DNS capabilities, control 1.0,
 interface 1.0, and `godaddy.pat`. The generated runtime binding repeats the

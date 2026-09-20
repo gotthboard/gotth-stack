@@ -50,7 +50,7 @@ func VerifyAndAdmit(reader io.Reader, request Request) (Result, error) {
 }
 
 func verifyAndAdmit(reader io.Reader, request Request, pins artifactPins) (Result, error) {
-	if !validRequest(request) {
+	if !validRequest(request, pins.PublicationAvailable) {
 		return Result{}, ErrInvalidAdmission
 	}
 	members, err := verifyArtifact(reader, pins)
@@ -89,7 +89,7 @@ func verifyAndAdmit(reader io.Reader, request Request, pins artifactPins) (Resul
 	return Result{Executable: append([]byte(nil), members.Executable...), RuntimeBinding: bindingJSON, ProviderConfiguration: configurationJSON, ManifestSHA256: manifestDigest, GrantSHA256: session.GrantDigest, SessionSHA256: session.Fingerprint, AdmissionSHA256: digest(wireJSON), ReleaseReady: request.Distribution == DistributionPublished}, nil
 }
 
-func validRequest(r Request) bool {
+func validRequest(r Request, publicationAvailable bool) bool {
 	if !validUUID(r.InstanceID) || len(r.Capabilities) < 1 || len(r.Capabilities) > len(expectedCapabilities) || !sortedSubset(r.Capabilities, expectedCapabilities) || len(r.Zones) < 1 || len(r.Zones) > 32 || !sort.StringsAreSorted(r.Zones) || len(r.RecordTypes) < 1 || len(r.RecordTypes) > len(expectedRecordTypes) || !sortedSubset(r.RecordTypes, expectedRecordTypes) || r.Environment != "production" && r.Environment != "ote" || r.TimeoutSeconds < 1 || r.TimeoutSeconds > 30 {
 		return false
 	}
@@ -102,7 +102,7 @@ func validRequest(r Request) bool {
 	case DistributionCandidate:
 		return r.ForgejoCommit == ExpectedSourceCommit && r.GitHubCommit == ""
 	case DistributionPublished:
-		return r.ForgejoCommit == ExpectedSourceCommit && r.GitHubCommit == ExpectedSourceCommit
+		return publicationAvailable && r.ForgejoCommit == ExpectedSourceCommit && r.GitHubCommit == ExpectedSourceCommit
 	default:
 		return false
 	}

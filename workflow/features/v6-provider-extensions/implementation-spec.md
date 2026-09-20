@@ -15,7 +15,8 @@ The request contains only:
 No map or free-form metadata enters a canonical document.
 The version, repository identities, source and foundation commits, and all
 artifact/member SHA-256 values are compiled admission-profile pins rather than
-caller inputs.
+caller inputs. Publication availability is also a compiled pin and remains
+false until a reviewed update records retained cross-forge evidence.
 
 ## Validation and output
 
