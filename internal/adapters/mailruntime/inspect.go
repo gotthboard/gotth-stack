@@ -299,7 +299,7 @@ func (adapter *adapter) validEffectiveContainer(record containerInspect, expecte
 			return false
 		}
 	}
-	if !tmpfsMatches(record.HostConfig.Tmpfs, "/tmp", []string{"rw", "noexec", "nosuid", "nodev", "size=67108864"}) || !tmpfsMatches(record.HostConfig.Tmpfs, "/run", []string{"rw", "noexec", "nosuid", "nodev", "size=16777216"}) || len(record.HostConfig.Tmpfs) != 2 {
+	if !tmpfsMatches(record.HostConfig.Tmpfs, "/tmp", []string{"rw", "noexec", "nosuid", "nodev", "size=67108864"}) || !tmpfsMatches(record.HostConfig.Tmpfs, "/run", []string{"rw", "noexec", "nosuid", "nodev", "size=16777216", "uid=1000", "gid=1000", "mode=0700"}) || len(record.HostConfig.Tmpfs) != 2 {
 		return false
 	}
 	if len(record.Mounts) != len(definition.mounts) || len(expected.MountSources) != len(definition.mounts) {

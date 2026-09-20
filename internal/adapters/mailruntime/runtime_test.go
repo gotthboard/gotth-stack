@@ -159,7 +159,7 @@ func fakeRuntimeInspect(name string, container fakeRuntimeContainer) containerIn
 	record.HostConfig.CapDrop = []string{"ALL"}
 	record.HostConfig.CapAdd = append([]string(nil), definition.capAdd...)
 	record.HostConfig.SecurityOpt = []string{"no-new-privileges"}
-	record.HostConfig.Tmpfs = map[string]string{"/tmp": "rw,noexec,nosuid,nodev,size=67108864", "/run": "rw,noexec,nosuid,nodev,size=16777216"}
+	record.HostConfig.Tmpfs = map[string]string{"/tmp": "rw,noexec,nosuid,nodev,size=67108864", "/run": "rw,noexec,nosuid,nodev,size=16777216,uid=1000,gid=1000,mode=0700"}
 	record.HostConfig.PortBindings = make(map[string][]portBinding)
 	for _, port := range definition.ports {
 		record.HostConfig.PortBindings[strconvInt(port.containerPort)+"/tcp"] = []portBinding{{HostIP: port.hostIP, HostPort: strconvInt(port.hostPort)}}

@@ -74,6 +74,7 @@ func TestCreateArgumentsRoleBoundary(t *testing.T) {
 				" --label " + labelAdapter + "=" + request.definition.adapterID + " ",
 				" --read-only ", " --cap-drop ALL ", " --security-opt no-new-privileges ",
 				" --network gotth-private ", " --network-alias " + string(role) + " ",
+				" --tmpfs /run:rw,noexec,nosuid,nodev,size=16777216,uid=1000,gid=1000,mode=0700 ",
 				" --mount type=bind,src=/srv/config,dst=" + configTarget + ",readonly ",
 				" " + request.spec.Candidate.Image + " ",
 			} {

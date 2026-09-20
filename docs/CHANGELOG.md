@@ -16,6 +16,36 @@
 
 ## Unreleased
 
+### 2026-09-20 14:00 CDT — Make the private runtime tmpfs usable by fixed Mail UIDs
+
+Commit: `current commit; hash assigned by Git after commit`
+
+Affected files:
+
+- `internal/adapters/mailruntime/process.go`;
+- `internal/adapters/mailruntime/inspect.go`;
+- Mail runtime process and lifecycle tests;
+- `docs/CHANGELOG.md`.
+
+Explanation:
+
+The combined production-role proof found that Docker created the `/run` tmpfs
+as root-owned while the control, front, and Rspamd roles run as fixed UID/GID
+1000 without discretionary-access capabilities. Rspamd therefore could not
+create its required private control-socket directory. The adapter now creates
+the bounded `/run` tmpfs with explicit UID/GID 1000 and mode 0700 and rejects
+containers that do not preserve that exact ownership contract. Root Postfix
+and Dovecot retain only their already documented capabilities and can operate
+inside the same private runtime tree.
+
+Verification:
+
+- focused Mail runtime serial, race, and vet checks pass;
+- argument and effective-container tests cover the exact tmpfs ownership;
+- the production smoke proceeds past Rspamd startup under the adapter's
+  read-only-root and dropped-capability boundary;
+- `git diff --check` passes.
+
 ### 2026-09-20 13:45 CDT — Wait for bounded Mail role readiness
 
 Commit: `current commit; hash assigned by Git after commit`

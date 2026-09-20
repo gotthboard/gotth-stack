@@ -112,7 +112,7 @@ func createArguments(base []string, request commandRequest) ([]string, error) {
 		"--security-opt", "no-new-privileges", "--network", request.spec.NetworkName,
 		"--network-alias", definition.alias,
 		"--tmpfs", "/tmp:rw,noexec,nosuid,nodev,size=67108864",
-		"--tmpfs", "/run:rw,noexec,nosuid,nodev,size=16777216",
+		"--tmpfs", "/run:rw,noexec,nosuid,nodev,size=16777216,uid=1000,gid=1000,mode=0700",
 		"--env", "GOTTH_MAIL_CONFIG_DIR="+configTarget,
 	)
 	for _, capability := range definition.capAdd {
