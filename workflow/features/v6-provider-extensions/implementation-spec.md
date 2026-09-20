@@ -7,13 +7,15 @@ The request contains only:
 
 - exact candidate/published distribution proof; candidate requires an empty
   GitHub commit and published requires exact cross-forge commit parity;
-- immutable version and SHA-256 values;
 - UUID instance ID;
 - sorted granted capability subset;
 - sorted exact zones and mutable record-type subset;
 - production/OTE enum and timeout 1–30 seconds.
 
 No map or free-form metadata enters a canonical document.
+The version, repository identities, source and foundation commits, and all
+artifact/member SHA-256 values are compiled admission-profile pins rather than
+caller inputs.
 
 ## Validation and output
 

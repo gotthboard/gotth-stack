@@ -1,6 +1,6 @@
-.PHONY: verify verify-web verify-caddy verify-postgresql verify-authentik verify-mail verify-controller coverage build frontend-dependencies generate-web
+.PHONY: verify verify-web verify-caddy verify-postgresql verify-authentik verify-mail verify-controller verify-provider-extensions coverage build provider-conformance frontend-dependencies generate-web
 
-verify: verify-web verify-caddy verify-postgresql verify-authentik verify-mail verify-controller
+verify: verify-web verify-caddy verify-postgresql verify-authentik verify-mail verify-controller verify-provider-extensions
 	version="$$(go env GOVERSION)"; test "$${version%%-*}" = "go1.26.6"
 	test -z "$$(gofmt -l $$(git ls-files --cached --others --exclude-standard -- '*.go'))"
 	go vet -mod=readonly ./...
@@ -49,6 +49,12 @@ verify-controller:
 	go vet -mod=readonly ./internal/controller ./pkg/journal
 	go test -mod=readonly -race -cover ./internal/controller ./pkg/journal
 
+verify-provider-extensions:
+	version="$$(go env GOVERSION)"; test "$${version%%-*}" = "go1.26.6"
+	test -z "$$(rg -n --glob '*.go' --glob '!*_test.go' --glob '!*.pb.go' 'os/exec|exec\.Command|plugin\.Open|/bin/(sh|bash)|ProxyFromEnvironment|http\.(DefaultClient|Get|Post)|unsafe\.' internal/extensions/godaddydns)"
+	go vet -mod=readonly ./internal/extensions/godaddydns/...
+	go test -mod=readonly -race -cover ./internal/extensions/godaddydns/...
+
 verify-web: generate-web
 	version="$$(go env GOVERSION)"; test "$${version%%-*}" = "go1.26.6"
 	before="$$(sha256sum internal/site/view_templ.go internal/site/static/site-4c3b7f235729e101ffa964903e3ec0c23e47ff7b3fc7ba41452d030b900eec52.css internal/site/static/htmx-2.0.10.min.js)"; $(MAKE) generate-web >/dev/null; after="$$(sha256sum internal/site/view_templ.go internal/site/static/site-4c3b7f235729e101ffa964903e3ec0c23e47ff7b3fc7ba41452d030b900eec52.css internal/site/static/htmx-2.0.10.min.js)"; test "$$before" = "$$after"
@@ -76,3 +82,7 @@ coverage:
 
 build:
 	go build -mod=readonly ./cmd/...
+
+provider-conformance:
+	@test -n "$(GOTTH_GODADDY_PROVIDER_REPO)" || { echo "GOTTH_GODADDY_PROVIDER_REPO is required" >&2; exit 2; }
+	./scripts/test-godaddy-provider-conformance.sh "$(GOTTH_GODADDY_PROVIDER_REPO)"
