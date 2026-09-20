@@ -25,6 +25,7 @@ Affected files:
 - `Makefile`;
 - `internal/adapters/mailruntime/bindings_linux.go`;
 - `internal/adapters/mailruntime/integration_test.go`;
+- `internal/adapters/mailruntime/process_test.go`;
 - `internal/adapters/mailruntime/runtime_test.go`;
 - `docs/CHANGELOG.md`.
 

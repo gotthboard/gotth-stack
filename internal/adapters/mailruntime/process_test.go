@@ -1,6 +1,7 @@
 package mailruntime
 
 import (
+	"errors"
 	"slices"
 	"strconv"
 	"strings"
@@ -144,5 +145,17 @@ func TestFixedArgumentsRejectsInvalidRequests(t *testing.T) {
 		if _, err := fixedArguments(request); err != ErrInvalidInput {
 			t.Fatalf("request=%#v error=%v", request, err)
 		}
+	}
+}
+
+func TestLimitedBufferNeverExceedsItsBound(t *testing.T) {
+	buffer := limitedBuffer{limit: 4}
+	written, err := buffer.Write([]byte("abcdef"))
+	if written != 4 || !errors.Is(err, ErrLimit) || string(buffer.value) != "abcd" {
+		t.Fatalf("written=%d error=%v value=%q", written, err, buffer.value)
+	}
+	written, err = buffer.Write([]byte("x"))
+	if written != 0 || !errors.Is(err, ErrLimit) || string(buffer.value) != "abcd" {
+		t.Fatalf("second write=%d error=%v value=%q", written, err, buffer.value)
 	}
 }
