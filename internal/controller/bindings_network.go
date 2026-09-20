@@ -16,8 +16,8 @@ type networkObservation struct {
 // BindMailNetwork admits the one fixed mail-runtime network bootstrap. It is
 // intentionally a separate operation from role replacement because network
 // creation has no honest reverse action.
-func BindMailNetwork(componentID string, adapter *mailruntime.ControlPlane) (*Binding, error) {
-	if componentID == "" || adapter == nil {
+func BindMailNetwork(componentID, artifactDigest, configurationDigest string, adapter *mailruntime.ControlPlane) (*Binding, error) {
+	if componentID == "" || artifactDigest == "" || configurationDigest == "" || adapter == nil {
 		return nil, ErrInvalidInput
 	}
 	observe := func(ctx context.Context, _ string) ([]byte, error) {
@@ -34,9 +34,12 @@ func BindMailNetwork(componentID string, adapter *mailruntime.ControlPlane) (*Bi
 	}
 	present := func(value []byte) bool {
 		observation, ok := decode(value)
-		return ok && observation.Exists && observation.Summary.Digest != ""
+		return ok && observation.Exists && observation.Summary.Name != "" && observation.Summary.ID != "" && observation.Summary.Digest != ""
 	}
-	absent := func(value []byte) bool { observation, ok := decode(value); return ok && !observation.Exists }
+	absent := func(value []byte) bool {
+		observation, ok := decode(value)
+		return ok && !observation.Exists && observation.Summary == (mailruntime.NetworkSummary{})
+	}
 	verify := func(ctx context.Context, _ string) error {
 		_, exists, err := adapter.ObserveNetwork(ctx)
 		if err == nil && !exists {
@@ -47,6 +50,7 @@ func BindMailNetwork(componentID string, adapter *mailruntime.ControlPlane) (*Bi
 	return &Binding{
 		componentID: componentID, adapterID: AdapterMailControlPlane,
 		capabilities: []string{"network.ensure"}, secretSlots: []string{}, secretDigests: map[string]string{},
+		artifactDigest: artifactDigest, configurationDigest: configurationDigest,
 		observe:           observe,
 		preflight:         func(ctx context.Context, operationID string) ([]byte, error) { return observe(ctx, operationID) },
 		stage:             func(context.Context, string) error { return nil },

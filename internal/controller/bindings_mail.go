@@ -26,7 +26,7 @@ func BindMailControlPlane(componentID string, adapter *mailruntime.ControlPlane,
 	if adapter == nil {
 		return nil, ErrInvalidInput
 	}
-	return bindMail(componentID, AdapterMailControlPlane, []string{"runtime.replace"}, []string{"database-url", "extension-secrets", "front-auth-token", "master-key", "oidc-client-secret", "postfix-helper-token", "postfix-release-token"}, adapter, request.Candidate, func(ctx context.Context, operationID string) (*mailruntime.Prepared, mailruntime.Summary, error) {
+	return bindMail(componentID, AdapterMailControlPlane, []string{"runtime.replace"}, []string{"secret-set"}, adapter, request.Candidate, func(ctx context.Context, operationID string) (*mailruntime.Prepared, mailruntime.Summary, error) {
 		value := request
 		value.Candidate.OperationID = operationID
 		return adapter.Preflight(ctx, value)
@@ -37,7 +37,7 @@ func BindMailFront(componentID string, adapter *mailruntime.Front, request mailr
 	if adapter == nil {
 		return nil, ErrInvalidInput
 	}
-	return bindMail(componentID, AdapterMailFront, []string{"listener.public-mail", "runtime.replace"}, []string{"certificate", "front-auth-token", "private-key"}, adapter, request.Candidate, func(ctx context.Context, operationID string) (*mailruntime.Prepared, mailruntime.Summary, error) {
+	return bindMail(componentID, AdapterMailFront, []string{"listener.public-mail", "runtime.replace"}, []string{"secret-set"}, adapter, request.Candidate, func(ctx context.Context, operationID string) (*mailruntime.Prepared, mailruntime.Summary, error) {
 		value := request
 		value.Candidate.OperationID = operationID
 		return adapter.Preflight(ctx, value)
@@ -48,7 +48,7 @@ func BindMailPostfix(componentID string, adapter *mailruntime.Postfix, request m
 	if adapter == nil {
 		return nil, ErrInvalidInput
 	}
-	return bindMail(componentID, AdapterMailPostfix, []string{"runtime.replace"}, []string{"helper-token", "release-token"}, adapter, request.Candidate, func(ctx context.Context, operationID string) (*mailruntime.Prepared, mailruntime.Summary, error) {
+	return bindMail(componentID, AdapterMailPostfix, []string{"runtime.replace"}, []string{"secret-set"}, adapter, request.Candidate, func(ctx context.Context, operationID string) (*mailruntime.Prepared, mailruntime.Summary, error) {
 		value := request
 		value.Candidate.OperationID = operationID
 		return adapter.Preflight(ctx, value)
@@ -59,7 +59,7 @@ func BindMailDovecot(componentID string, adapter *mailruntime.Dovecot, request m
 	if adapter == nil {
 		return nil, ErrInvalidInput
 	}
-	return bindMail(componentID, AdapterMailDovecot, []string{"runtime.replace"}, []string{"control-token"}, adapter, request.Candidate, func(ctx context.Context, operationID string) (*mailruntime.Prepared, mailruntime.Summary, error) {
+	return bindMail(componentID, AdapterMailDovecot, []string{"runtime.replace"}, []string{"secret-set"}, adapter, request.Candidate, func(ctx context.Context, operationID string) (*mailruntime.Prepared, mailruntime.Summary, error) {
 		value := request
 		value.Candidate.OperationID = operationID
 		return adapter.Preflight(ctx, value)
@@ -70,7 +70,7 @@ func BindMailRspamd(componentID string, adapter *mailruntime.Rspamd, request mai
 	if adapter == nil {
 		return nil, ErrInvalidInput
 	}
-	return bindMail(componentID, AdapterMailRspamd, []string{"runtime.replace"}, []string{"controller-token", "dkim"}, adapter, request.Candidate, func(ctx context.Context, operationID string) (*mailruntime.Prepared, mailruntime.Summary, error) {
+	return bindMail(componentID, AdapterMailRspamd, []string{"runtime.replace"}, []string{"secret-set"}, adapter, request.Candidate, func(ctx context.Context, operationID string) (*mailruntime.Prepared, mailruntime.Summary, error) {
 		value := request
 		value.Candidate.OperationID = operationID
 		return adapter.Preflight(ctx, value)
@@ -99,9 +99,9 @@ func bindMail(componentID, adapterID string, capabilities, secretSlots []string,
 			return false
 		}
 		if !observation.Summary.HadPrevious {
-			return observation.PrimaryState == mailruntime.StateAbsent && observation.RollbackState == mailruntime.StateAbsent
+			return observation.PrimaryState == mailruntime.StateAbsent && observation.PrimaryPower == mailruntime.PowerAbsent && observation.RollbackState == mailruntime.StateAbsent && observation.RollbackPower == mailruntime.PowerAbsent
 		}
-		return observation.PrimaryState == mailruntime.StatePrevious && observation.PrimaryPower == mailruntime.PowerStopped && observation.RollbackState == mailruntime.StateAbsent
+		return observation.PrimaryState == mailruntime.StatePrevious && observation.PrimaryPower == mailruntime.PowerStopped && observation.RollbackState == mailruntime.StateAbsent && observation.RollbackPower == mailruntime.PowerAbsent
 	}
 	preserved := func(value []byte) bool {
 		observation, ok := decode(value)
@@ -109,23 +109,23 @@ func bindMail(componentID, adapterID string, capabilities, secretSlots []string,
 			return false
 		}
 		if !observation.Summary.HadPrevious {
-			return observation.PrimaryState == mailruntime.StateAbsent && observation.RollbackState == mailruntime.StateAbsent
+			return observation.PrimaryState == mailruntime.StateAbsent && observation.PrimaryPower == mailruntime.PowerAbsent && observation.RollbackState == mailruntime.StateAbsent && observation.RollbackPower == mailruntime.PowerAbsent
 		}
-		return observation.PrimaryState == mailruntime.StateAbsent && observation.RollbackState == mailruntime.StatePrevious && observation.RollbackPower == mailruntime.PowerStopped
+		return observation.PrimaryState == mailruntime.StateAbsent && observation.PrimaryPower == mailruntime.PowerAbsent && observation.RollbackState == mailruntime.StatePrevious && observation.RollbackPower == mailruntime.PowerStopped
 	}
 	candidateStopped := func(value []byte) bool {
 		observation, ok := decode(value)
-		if !ok || observation.PrimaryState != mailruntime.StateCandidate || observation.PrimaryPower != mailruntime.PowerStopped {
+		if !ok || observation.StageState != mailruntime.StateCandidate || observation.PrimaryState != mailruntime.StateCandidate || observation.PrimaryPower != mailruntime.PowerStopped {
 			return false
 		}
 		if observation.Summary.HadPrevious {
 			return observation.RollbackState == mailruntime.StatePrevious && observation.RollbackPower == mailruntime.PowerStopped
 		}
-		return observation.RollbackState == mailruntime.StateAbsent
+		return observation.RollbackState == mailruntime.StateAbsent && observation.RollbackPower == mailruntime.PowerAbsent
 	}
 	candidateRunning := func(value []byte) bool {
 		observation, ok := decode(value)
-		if !ok || observation.PrimaryState != mailruntime.StateCandidate || observation.PrimaryPower != mailruntime.PowerRunning {
+		if !ok || observation.StageState != mailruntime.StateCandidate || observation.PrimaryState != mailruntime.StateCandidate || observation.PrimaryPower != mailruntime.PowerRunning {
 			return false
 		}
 		if observation.Summary.HadPrevious {
@@ -135,11 +135,11 @@ func bindMail(componentID, adapterID string, capabilities, secretSlots []string,
 	}
 	previousRunning := func(value []byte) bool {
 		observation, ok := decode(value)
-		if !ok || observation.StageState != mailruntime.StateCandidate || observation.RollbackState != mailruntime.StateAbsent {
+		if !ok || observation.StageState != mailruntime.StateCandidate || observation.RollbackState != mailruntime.StateAbsent || observation.RollbackPower != mailruntime.PowerAbsent {
 			return false
 		}
 		if !observation.Summary.HadPrevious {
-			return observation.PrimaryState == mailruntime.StateAbsent
+			return observation.PrimaryState == mailruntime.StateAbsent && observation.PrimaryPower == mailruntime.PowerAbsent
 		}
 		power := mailruntime.PowerStopped
 		if observation.Summary.PreviousRunning {
@@ -154,6 +154,7 @@ func bindMail(componentID, adapterID string, capabilities, secretSlots []string,
 	var prepared *mailruntime.Prepared
 	return &Binding{
 		componentID: componentID, adapterID: adapterID, capabilities: capabilities, secretSlots: secretSlots, secretDigests: secretDigests,
+		artifactDigest: imageArtifactDigest(candidate.Image), configurationDigest: candidate.ConfigurationDigest,
 		observe: observe,
 		preflight: func(ctx context.Context, operationID string) ([]byte, error) {
 			candidate, summary, err := prepare(ctx, operationID)

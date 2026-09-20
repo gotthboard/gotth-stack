@@ -60,8 +60,11 @@ func BindAuthentik(componentID string, adapter *authentik.Adapter, request authe
 	}
 	stopWorker := func(value []byte) bool {
 		observation, ok := decode(value)
-		if !ok || !observation.Summary.HadPrevious {
-			return ok && absent(observation.Server) && absent(observation.Worker)
+		if !ok || observation.StageState != authentik.StateCandidate {
+			return false
+		}
+		if !observation.Summary.HadPrevious {
+			return absent(observation.Server) && absent(observation.Worker)
 		}
 		serverPower := authentik.PowerStopped
 		if observation.Summary.PreviousServerRunning {
@@ -71,28 +74,37 @@ func BindAuthentik(componentID string, adapter *authentik.Adapter, request authe
 	}
 	stopServer := func(value []byte) bool {
 		observation, ok := decode(value)
-		if !ok || !observation.Summary.HadPrevious {
-			return ok && absent(observation.Server) && absent(observation.Worker)
+		if !ok || observation.StageState != authentik.StateCandidate {
+			return false
+		}
+		if !observation.Summary.HadPrevious {
+			return absent(observation.Server) && absent(observation.Worker)
 		}
 		return previous(observation.Server, authentik.PowerStopped) && previous(observation.Worker, authentik.PowerStopped)
 	}
 	preserveWorker := func(value []byte) bool {
 		observation, ok := decode(value)
-		if !ok || !observation.Summary.HadPrevious {
-			return ok && absent(observation.Server) && absent(observation.Worker)
+		if !ok || observation.StageState != authentik.StateCandidate {
+			return false
+		}
+		if !observation.Summary.HadPrevious {
+			return absent(observation.Server) && absent(observation.Worker)
 		}
 		return previous(observation.Server, authentik.PowerStopped) && preserved(observation.Worker)
 	}
 	preserveServer := func(value []byte) bool {
 		observation, ok := decode(value)
-		if !ok || !observation.Summary.HadPrevious {
-			return ok && absent(observation.Server) && absent(observation.Worker)
+		if !ok || observation.StageState != authentik.StateCandidate {
+			return false
+		}
+		if !observation.Summary.HadPrevious {
+			return absent(observation.Server) && absent(observation.Worker)
 		}
 		return preserved(observation.Server) && preserved(observation.Worker)
 	}
 	createServer := func(value []byte) bool {
 		observation, ok := decode(value)
-		return ok && candidate(observation.Server, authentik.PowerStopped, observation.Summary.HadPrevious) && func() bool {
+		return ok && observation.StageState == authentik.StateCandidate && candidate(observation.Server, authentik.PowerStopped, observation.Summary.HadPrevious) && func() bool {
 			if observation.Summary.HadPrevious {
 				return preserved(observation.Worker)
 			}
@@ -101,15 +113,15 @@ func BindAuthentik(componentID string, adapter *authentik.Adapter, request authe
 	}
 	createWorker := func(value []byte) bool {
 		observation, ok := decode(value)
-		return ok && candidate(observation.Server, authentik.PowerStopped, observation.Summary.HadPrevious) && candidate(observation.Worker, authentik.PowerStopped, observation.Summary.HadPrevious)
+		return ok && observation.StageState == authentik.StateCandidate && candidate(observation.Server, authentik.PowerStopped, observation.Summary.HadPrevious) && candidate(observation.Worker, authentik.PowerStopped, observation.Summary.HadPrevious)
 	}
 	startServer := func(value []byte) bool {
 		observation, ok := decode(value)
-		return ok && candidate(observation.Server, authentik.PowerRunning, observation.Summary.HadPrevious) && candidate(observation.Worker, authentik.PowerStopped, observation.Summary.HadPrevious)
+		return ok && observation.StageState == authentik.StateCandidate && candidate(observation.Server, authentik.PowerRunning, observation.Summary.HadPrevious) && candidate(observation.Worker, authentik.PowerStopped, observation.Summary.HadPrevious)
 	}
 	startWorker := func(value []byte) bool {
 		observation, ok := decode(value)
-		return ok && candidate(observation.Server, authentik.PowerRunning, observation.Summary.HadPrevious) && candidate(observation.Worker, authentik.PowerRunning, observation.Summary.HadPrevious)
+		return ok && observation.StageState == authentik.StateCandidate && candidate(observation.Server, authentik.PowerRunning, observation.Summary.HadPrevious) && candidate(observation.Worker, authentik.PowerRunning, observation.Summary.HadPrevious)
 	}
 	call := func(action func(context.Context, string, authentik.Role) (authentik.Summary, error), role authentik.Role) func(context.Context, string) error {
 		return func(ctx context.Context, operationID string) error {
@@ -121,8 +133,9 @@ func BindAuthentik(componentID string, adapter *authentik.Adapter, request authe
 	return &Binding{
 		componentID: componentID, adapterID: AdapterAuthentik,
 		capabilities: []string{"runtime.replace"}, secretSlots: []string{"database-password", "secret-key"},
-		secretDigests: map[string]string{"database-password": request.DatabaseSecretRevisionDigest, "secret-key": request.KeySecretRevisionDigest},
-		observe:       observe,
+		secretDigests:  map[string]string{"database-password": request.DatabaseSecretRevisionDigest, "secret-key": request.KeySecretRevisionDigest},
+		artifactDigest: imageArtifactDigest(request.Specification.Image), configurationDigest: request.ConfigurationDigest,
+		observe: observe,
 		preflight: func(ctx context.Context, operationID string) ([]byte, error) {
 			value := request
 			value.OperationID = operationID

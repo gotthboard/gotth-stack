@@ -163,6 +163,15 @@ type Adapter struct {
 	closed           bool
 }
 
+// ExecutableDigest returns the immutable digest verified when the adapter was
+// opened. Controllers use it to bind execution to the approved artifact.
+func (adapter *Adapter) ExecutableDigest() string {
+	if adapter == nil {
+		return ""
+	}
+	return adapter.binaryDigest
+}
+
 type execRunner struct{}
 
 type adminReader struct {

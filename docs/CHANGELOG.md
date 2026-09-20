@@ -20,9 +20,10 @@
 
 - Added the closed controller registry for Caddy, PostgreSQL, Authentik, the
   five GOTTH Mail roles, and the separate fixed mail-network bootstrap.
-- Bound exact plan capabilities and secret-slot revision digests into the
-  durable approval before any preflight or effect. Adapter-provided secret
-  files remain typed file references; the controller stores only revisions.
+- Bound each typed request's artifact and configuration digests, exact plan
+  capabilities, and secret-slot revision digests into the durable approval
+  before any preflight or effect. Adapter-provided secret files remain typed
+  file references; the controller stores only revisions.
 - Split read-only preflight inspection from private transaction staging so
   each adapter call has its own write-before-effect journal record.
 - Added exact observation classification, fixed failure reasons, reverse

@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"errors"
 	"strings"
 
 	"github.com/gotthboard/gotth-stack/pkg/journal"
@@ -25,8 +26,8 @@ func (controller *Controller) Recover(ctx context.Context) (journal.Operation, e
 	}
 	step, running := runningStep(operation)
 	if !running {
-		if operation.State == journal.StateFailed && operation.MutationStarted {
-			return controller.rollback(ctx, operation)
+		if operation.State == journal.StateRecoveryRequired || operation.State == journal.StateFailed {
+			return controller.finishRecoveredFailure(ctx, operation, ErrAdapter)
 		}
 		if operation.State == journal.StateRollingBack {
 			return controller.rollback(ctx, operation)
@@ -62,13 +63,37 @@ func (controller *Controller) Recover(ctx context.Context) (journal.Operation, e
 	} else {
 		operation, err = controller.retryReadOnly(ctx, operation, binding, step)
 		if err != nil {
-			return operation, err
+			return controller.finishRecoveredFailure(ctx, operation, err)
 		}
 	}
 	if operation.State == journal.StateRollingBack {
 		return controller.rollback(ctx, operation)
 	}
 	return controller.continueExecution(ctx, operation, true)
+}
+
+func (controller *Controller) finishRecoveredFailure(ctx context.Context, operation journal.Operation, cause error) (journal.Operation, error) {
+	if errors.Is(cause, ErrRecoveryRequired) || errors.Is(cause, ErrObservation) {
+		return operation, cause
+	}
+	if operation.State == journal.StateRecoveryRequired || operation.MutationStarted && hasRecoveryOnlyMutation(operation) {
+		finished, err := controller.journal.FinishOperation(operation.ID, journal.OutcomeRecoveryRequired)
+		if err != nil {
+			return operation, err
+		}
+		return finished, ErrRecoveryRequired
+	}
+	if operation.State == journal.StateFailed && operation.MutationStarted {
+		return controller.rollback(ctx, operation)
+	}
+	if operation.State == journal.StateFailed {
+		finished, err := controller.journal.FinishOperation(operation.ID, journal.OutcomeFailed)
+		if err != nil {
+			return operation, err
+		}
+		return finished, cause
+	}
+	return operation, cause
 }
 
 func (controller *Controller) retryReadOnly(ctx context.Context, operation journal.Operation, binding *Binding, step journal.Step) (journal.Operation, error) {

@@ -66,11 +66,14 @@ func TestConcreteCaddyBindingUsesExactStatePredicates(t *testing.T) {
 		t.Fatalf("binding=%#v err=%v", binding, err)
 	}
 	previous := caddy.Observation{Summary: caddy.Summary{RollbackReference: testDigest("rollback")}, StageState: caddy.StatePresent, FileState: caddy.StatePrevious, FileTemporary: caddy.StateAbsent, RuntimeState: caddy.StatePrevious}
+	installed := previous
+	installed.FileState = caddy.StateCandidate
 	candidate := previous
 	candidate.FileState, candidate.RuntimeState = caddy.StateCandidate, caddy.StateCandidate
 	previousJSON, _ := json.Marshal(previous)
+	installedJSON, _ := json.Marshal(installed)
 	candidateJSON, _ := json.Marshal(candidate)
-	if !binding.stageReached(previousJSON) || !binding.forward[0].predecessor(previousJSON) || !binding.forward[0].reversed(previousJSON) || !binding.forward[0].reached(candidateJSON) || !binding.forward[1].reached(candidateJSON) || !binding.verifyCandidate.reached(candidateJSON) || !binding.verifyPrevious.reached(previousJSON) {
+	if !binding.stageReached(previousJSON) || !binding.forward[0].predecessor(previousJSON) || !binding.forward[0].reversed(previousJSON) || !binding.forward[0].reached(installedJSON) || !binding.forward[1].predecessor(installedJSON) || !binding.forward[1].reached(candidateJSON) || !binding.verifyCandidate.reached(candidateJSON) || !binding.verifyPrevious.reached(previousJSON) {
 		t.Fatal("caddy state predicate mismatch")
 	}
 	if reference, err := binding.rollbackReference(previousJSON); err != nil || reference != testDigest("rollback") {
@@ -85,7 +88,7 @@ func TestConcretePostgreSQLBindingUsesExactStatePredicates(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer adapter.Close()
-	binding, err := BindPostgreSQL("database", adapter, postgresql.Request{ComponentID: "database", SecretRevisionDigest: testDigest("secret"), ConfigurationDigest: testDigest("configuration")})
+	binding, err := BindPostgreSQL("database", adapter, postgresql.Request{ComponentID: "database", Specification: postgresql.Specification{Image: "registry.test/postgresql@" + testDigest("postgresql-image")}, SecretRevisionDigest: testDigest("secret"), ConfigurationDigest: testDigest("configuration")})
 	if err != nil || !validBinding(binding) {
 		t.Fatalf("binding=%#v err=%v", binding, err)
 	}
@@ -117,7 +120,7 @@ func TestConcreteAuthentikBindingUsesExactRoleOrder(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer adapter.Close()
-	binding, err := BindAuthentik("identity", adapter, authentik.Request{ComponentID: "identity", DatabaseSecretRevisionDigest: testDigest("database"), KeySecretRevisionDigest: testDigest("key")})
+	binding, err := BindAuthentik("identity", adapter, authentik.Request{ComponentID: "identity", Specification: authentik.Specification{Image: "registry.test/authentik@" + testDigest("authentik-image")}, ConfigurationDigest: testDigest("configuration"), DatabaseSecretRevisionDigest: testDigest("database"), KeySecretRevisionDigest: testDigest("key")})
 	if err != nil || !validBinding(binding) {
 		t.Fatalf("binding=%#v err=%v", binding, err)
 	}
@@ -143,19 +146,19 @@ func TestAllFiveMailBindingsAreClosedAndRoleSpecific(t *testing.T) {
 	}
 	digest := testDigest("secret")
 	candidate := func(component string) mailruntime.Candidate {
-		return mailruntime.Candidate{ComponentID: component, SecretRevisionDigest: digest}
+		return mailruntime.Candidate{ComponentID: component, Image: "registry.test/" + component + "@" + testDigest(component+"-image"), ConfigurationDigest: testDigest(component + "-configuration"), SecretRevisionDigest: digest}
 	}
 	control, err := mailruntime.OpenControlPlane(mailruntime.ControlPlaneOptions{Runtime: runtimeOptions("control"), DataRoot: paths.directory("control-data"), ExtensionStateRoot: paths.directory("extension-state"), ExtensionSecretRoot: paths.directory("extension-secret"), DatabaseSecretFile: paths.file("database-secret"), MasterSecretFile: paths.file("master-secret"), FrontAuthSecretFile: paths.file("control-front-secret"), OIDCSecretFile: paths.file("oidc-secret"), PostfixHelperFile: paths.file("control-helper-secret"), PostfixReleaseFile: paths.file("control-release-secret")})
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer control.Close()
-	networkBinding, err := BindMailNetwork("mail-network", control)
+	networkBinding, err := BindMailNetwork("mail-network", testDigest("network-artifact"), testDigest("network-configuration"), control)
 	if err != nil || !validBinding(networkBinding) {
 		t.Fatalf("network binding=%#v err=%v", networkBinding, err)
 	}
 	absentNetwork, _ := json.Marshal(networkObservation{})
-	presentNetwork, _ := json.Marshal(networkObservation{Exists: true, Summary: mailruntime.NetworkSummary{Digest: testDigest("network")}})
+	presentNetwork, _ := json.Marshal(networkObservation{Exists: true, Summary: mailruntime.NetworkSummary{Name: "gotth-mail", ID: "0123456789ab", Digest: testDigest("network")}})
 	if !networkBinding.forward[0].predecessor(absentNetwork) || !networkBinding.forward[0].reached(presentNetwork) || networkBinding.forward[0].recoveryOnly != journal.RecoveryNoRollback {
 		t.Fatal("network state predicate mismatch")
 	}

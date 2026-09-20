@@ -70,8 +70,8 @@ container after its successor or rollback state is proven.
 ## Controller binding
 
 The controller registers a closed map of exact adapter identities. A manifest
-component must match one registered typed adapter and an exact capability
-subset. Approval projects every component, artifact/configuration digest,
+component must match one registered typed adapter and its exact capability
+set. Approval projects every component, artifact/configuration digest,
 capability, and secret revision into `pkg/journal`.
 
 For every adapter call the controller:
@@ -100,6 +100,24 @@ terminal until a read-only previous-state verification step succeeds for each
 mutated component. On restart, an interrupted read-only call receives a new
 attempt; an interrupted mutation is only observed and classified, never
 invoked again.
+
+The closed registry admits these exact identities and grants:
+
+| Adapter identity | Capabilities | Secret slots |
+| --- | --- | --- |
+| `gotth-stack-adapter-caddy.v1` | `configuration.replace`, `runtime.reload` | none |
+| `gotth-stack-adapter-postgresql.v1` | `runtime.replace` | `password` |
+| `gotth-stack-adapter-authentik.v1` | `runtime.replace` | `database-password`, `secret-key` |
+| `gotth-stack-adapter-mail-control-plane.v1` | `network.ensure` in the separate network operation, or `runtime.replace` in the role operation | none for network; `secret-set` for the role |
+| `gotth-stack-adapter-mail-front.v1` | `listener.public-mail`, `runtime.replace` | `secret-set` |
+| `gotth-stack-adapter-mail-postfix.v1` | `runtime.replace` | `secret-set` |
+| `gotth-stack-adapter-mail-dovecot.v1` | `runtime.replace` | `secret-set` |
+| `gotth-stack-adapter-mail-rspamd.v1` | `runtime.replace` | `secret-set` |
+
+Each Mail `secret-set` is the adapter's canonical digest over its fixed,
+role-specific revision members. It does not pretend that one aggregate digest
+is several independent per-file revisions. PostgreSQL and Authentik retain
+their actual individual secret revisions.
 
 ## Production artifact contract
 

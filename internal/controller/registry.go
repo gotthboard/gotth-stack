@@ -46,7 +46,7 @@ func New(j *journal.Journal, plan stack.Plan, input journal.ApprovalInput, value
 	ordered := make([]*Binding, 0, len(plan.Steps))
 	for _, step := range plan.Steps {
 		binding := byAdapter[step.Adapter]
-		if binding == nil || binding.componentID != step.ComponentID || !subset(step.Capabilities, binding.capabilities) || !slices.Equal(step.SecretSlots, binding.secretSlots) {
+		if binding == nil || binding.componentID != step.ComponentID || binding.artifactDigest != step.Artifact.Digest || binding.configurationDigest != step.ConfigurationDigest || !slices.Equal(step.Capabilities, binding.capabilities) || !slices.Equal(step.SecretSlots, binding.secretSlots) {
 			return nil, ErrInvalidInput
 		}
 		if _, exists := byComponent[step.ComponentID]; exists {
@@ -54,6 +54,9 @@ func New(j *journal.Journal, plan stack.Plan, input journal.ApprovalInput, value
 		}
 		byComponent[step.ComponentID] = binding
 		ordered = append(ordered, binding)
+	}
+	if !recoveryPolicyIsolated(ordered) {
+		return nil, ErrInvalidInput
 	}
 	if !revisionsMatch(plan, input.SecretRevisions, byComponent) {
 		return nil, ErrInvalidInput
@@ -65,8 +68,23 @@ func New(j *journal.Journal, plan stack.Plan, input journal.ApprovalInput, value
 	return &Controller{journal: j, plan: plan, approval: approval, bindings: byComponent, ordered: ordered}, nil
 }
 
+func recoveryPolicyIsolated(bindings []*Binding) bool {
+	recoveryOnly := 0
+	rollbackable := 0
+	for _, binding := range bindings {
+		for _, action := range binding.forward {
+			if action.recoveryOnly == "" {
+				rollbackable++
+			} else {
+				recoveryOnly++
+			}
+		}
+	}
+	return recoveryOnly == 0 || (rollbackable == 0 && len(bindings) == 1)
+}
+
 func validBinding(value *Binding) bool {
-	if value.componentID == "" || value.adapterID == "" || value.observe == nil || value.preflight == nil || value.stage == nil || value.reconcileStage == nil || value.stageReached == nil || value.rollbackReference == nil || value.verifyCandidate.call == nil || value.verifyCandidate.reached == nil || value.verifyPrevious.call == nil || value.verifyPrevious.reached == nil {
+	if value.componentID == "" || value.adapterID == "" || value.artifactDigest == "" || value.configurationDigest == "" || value.observe == nil || value.preflight == nil || value.stage == nil || value.reconcileStage == nil || value.stageReached == nil || value.rollbackReference == nil || value.verifyCandidate.call == nil || value.verifyCandidate.reached == nil || value.verifyPrevious.call == nil || value.verifyPrevious.reached == nil {
 		return false
 	}
 	if !sortedUnique(value.capabilities) || !sortedUnique(value.secretSlots) || len(value.secretDigests) != len(value.secretSlots) {
@@ -109,15 +127,6 @@ func sortedUnique(values []string) bool {
 	}
 	for index := 1; index < len(values); index++ {
 		if values[index-1] == values[index] {
-			return false
-		}
-	}
-	return true
-}
-
-func subset(requested, allowed []string) bool {
-	for _, value := range requested {
-		if _, ok := slices.BinarySearch(allowed, value); !ok {
 			return false
 		}
 	}

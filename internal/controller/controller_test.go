@@ -26,6 +26,7 @@ type fakeMechanism struct {
 	unknownState        int
 	crashAfterAction    bool
 	crashAction         string
+	crashPreflightOnce  bool
 	observationFailures int
 	journal             *journal.Journal
 	operationID         string
@@ -86,11 +87,16 @@ func fakeBinding(t *testing.T, j *journal.Journal, mechanism *fakeMechanism) *Bi
 	return &Binding{
 		componentID: "proxy", adapterID: AdapterCaddy,
 		capabilities: []string{"configuration.replace", "runtime.reload"}, secretSlots: []string{}, secretDigests: map[string]string{},
+		artifactDigest: testDigest("artifact"), configurationDigest: testDigest("configuration"),
 		observe: observe,
 		preflight: func(_ context.Context, operationID string) ([]byte, error) {
 			operation, err := mechanism.journal.Operation(operationID)
 			if err != nil || len(operation.Steps) == 0 || operation.Steps[len(operation.Steps)-1].Status != journal.StepRunning {
 				t.Fatalf("preflight ran without durable intent: operation=%#v err=%v", operation, err)
+			}
+			if mechanism.crashPreflightOnce {
+				mechanism.crashPreflightOnce = false
+				mechanism.observationFailures++
 			}
 			return []byte("prepared"), nil
 		},
@@ -148,6 +154,32 @@ func TestExecuteWritesIntentBeforeEveryEffect(t *testing.T) {
 	}
 }
 
+func TestExecuteExactDuplicateReturnsDurableTerminalResult(t *testing.T) {
+	mechanism := &fakeMechanism{}
+	controller, _, _ := newControllerFixture(t, mechanism)
+	first, err := controller.Execute(context.Background(), ExecuteInput{OperationID: "operation-a"})
+	if err != nil || first.State != journal.StateComplete {
+		t.Fatalf("first=%#v err=%v", first, err)
+	}
+	second, err := controller.Execute(context.Background(), ExecuteInput{OperationID: "operation-a"})
+	if err != nil || second.State != journal.StateComplete || len(second.Steps) != len(first.Steps) {
+		t.Fatalf("second=%#v err=%v", second, err)
+	}
+}
+
+func TestExecuteExactDuplicatePreservesFailureOutcome(t *testing.T) {
+	mechanism := &fakeMechanism{failAction: "activate"}
+	controller, _, _ := newControllerFixture(t, mechanism)
+	first, err := controller.Execute(context.Background(), ExecuteInput{OperationID: "operation-a"})
+	if !errors.Is(err, ErrAdapter) || first.State != journal.StateRolledBack {
+		t.Fatalf("first=%#v err=%v", first, err)
+	}
+	second, err := controller.Execute(context.Background(), ExecuteInput{OperationID: "operation-a"})
+	if !errors.Is(err, ErrAdapter) || second.State != journal.StateRolledBack || len(second.Steps) != len(first.Steps) {
+		t.Fatalf("second=%#v err=%v", second, err)
+	}
+}
+
 func TestKnownApplyFailureRollsBackInReverseAndVerifies(t *testing.T) {
 	mechanism := &fakeMechanism{failAction: "activate"}
 	controller, _, _ := newControllerFixture(t, mechanism)
@@ -190,6 +222,49 @@ func TestRecoveryOnlyMutationCompletesOrFailsClosed(t *testing.T) {
 				t.Fatalf("operation=%#v err=%v", operation, err)
 			}
 		})
+	}
+}
+
+func TestVerificationFailureIsNotMaskedByCandidateState(t *testing.T) {
+	mechanism := &fakeMechanism{failAction: "verify-candidate"}
+	controller, _, _ := newControllerFixture(t, mechanism)
+	operation, err := controller.Execute(context.Background(), ExecuteInput{OperationID: "operation-a"})
+	if !errors.Is(err, ErrAdapter) || operation.State != journal.StateRolledBack || mechanism.state != 1 {
+		t.Fatalf("operation=%#v state=%d err=%v", operation, mechanism.state, err)
+	}
+	verify := operation.Steps[4]
+	if verify.Phase != journal.PhaseVerify || verify.Status != journal.StepFailed || verify.ReasonCode != "adapter_failed" {
+		t.Fatalf("verify=%#v", verify)
+	}
+}
+
+func TestRecoveryOnlyVerificationFailureRequiresRecovery(t *testing.T) {
+	mechanism := &fakeMechanism{failAction: "verify"}
+	controller, _, _ := newControllerFixture(t, mechanism)
+	binding := controller.ordered[0]
+	reached := func(want int) func([]byte) bool {
+		return func(value []byte) bool {
+			var state fakeState
+			return json.Unmarshal(value, &state) == nil && state.State == want
+		}
+	}
+	binding.forward = []transition{{name: "ensure", call: mechanism.mutate("ensure", 2), reached: reached(2), predecessor: reached(1), recoveryOnly: journal.RecoveryNoRollback}}
+	binding.rollbackOrder = []int{}
+	binding.verifyCandidate = transition{name: "verify", call: mechanism.mutate("verify", 2), reached: reached(2)}
+	operation, err := controller.Execute(context.Background(), ExecuteInput{OperationID: "operation-a"})
+	if !errors.Is(err, ErrRecoveryRequired) || operation.State != journal.StateRecoveryRequired || operation.FinishedAt.IsZero() {
+		t.Fatalf("operation=%#v err=%v", operation, err)
+	}
+}
+
+func TestRegistryRejectsMixedRecoveryPolicies(t *testing.T) {
+	rollbackable := &Binding{forward: []transition{{recoveryOnly: ""}}}
+	recoveryOnly := &Binding{forward: []transition{{recoveryOnly: journal.RecoveryNoRollback}}}
+	if recoveryPolicyIsolated([]*Binding{rollbackable, recoveryOnly}) {
+		t.Fatal("mixed rollback and recovery-only policy was admitted")
+	}
+	if !recoveryPolicyIsolated([]*Binding{rollbackable}) || !recoveryPolicyIsolated([]*Binding{recoveryOnly}) {
+		t.Fatal("single-policy operation was rejected")
 	}
 }
 
@@ -286,6 +361,87 @@ func TestInterruptedStageIsReconciledAsReadOnlyRetry(t *testing.T) {
 	}
 }
 
+func TestInterruptedPreflightIsRetriedAndRefreshedBeforeStage(t *testing.T) {
+	mechanism := &fakeMechanism{crashPreflightOnce: true}
+	controller, j, root := newControllerFixture(t, mechanism)
+	operation, err := controller.Execute(context.Background(), ExecuteInput{OperationID: "operation-a"})
+	if !errors.Is(err, ErrRecoveryRequired) || operation.State != journal.StatePreflighting {
+		t.Fatalf("interrupted operation=%#v err=%v", operation, err)
+	}
+	if err := j.Close(); err != nil {
+		t.Fatal(err)
+	}
+	reopened, _, err := journal.Open(root, "installation-a")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer reopened.Close()
+	binding := fakeBinding(t, reopened, mechanism)
+	recovered, err := New(reopened, controller.plan, journal.ApprovalInput{
+		ID: controller.approval.ID, ActorID: controller.approval.ActorID, AuthorityDigest: controller.approval.AuthorityDigest,
+		ExpiresAt: controller.approval.ExpiresAt, SecretRevisions: []journal.SecretRevision{},
+	}, Bindings{Caddy: binding})
+	if err != nil {
+		t.Fatal(err)
+	}
+	operation, err = recovered.Recover(context.Background())
+	if err != nil || operation.State != journal.StateComplete {
+		t.Fatalf("recovered operation=%#v err=%v", operation, err)
+	}
+	retried, refreshed := false, false
+	for _, step := range operation.Steps {
+		if step.StepID == "preflight-01" && step.Attempt == 2 && step.RetryOfInterrupted && step.Status == journal.StepSucceeded {
+			retried = true
+		}
+		if step.StepID == "refresh-01-01" && step.Status == journal.StepSucceeded {
+			refreshed = true
+		}
+	}
+	if !retried || !refreshed {
+		t.Fatalf("retried=%v refreshed=%v steps=%#v", retried, refreshed, operation.Steps)
+	}
+}
+
+func TestInterruptedVerificationFailureRollsBackDuringRecovery(t *testing.T) {
+	mechanism := &fakeMechanism{crashAction: "verify-candidate"}
+	controller, j, root := newControllerFixture(t, mechanism)
+	operation, err := controller.Execute(context.Background(), ExecuteInput{OperationID: "operation-a"})
+	if !errors.Is(err, ErrRecoveryRequired) || operation.State != journal.StateVerifying {
+		t.Fatalf("interrupted operation=%#v err=%v", operation, err)
+	}
+	if err := j.Close(); err != nil {
+		t.Fatal(err)
+	}
+	reopened, _, err := journal.Open(root, "installation-a")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer reopened.Close()
+	mechanism.crashAction = ""
+	mechanism.failAction = "verify-candidate"
+	binding := fakeBinding(t, reopened, mechanism)
+	recovered, err := New(reopened, controller.plan, journal.ApprovalInput{
+		ID: controller.approval.ID, ActorID: controller.approval.ActorID, AuthorityDigest: controller.approval.AuthorityDigest,
+		ExpiresAt: controller.approval.ExpiresAt, SecretRevisions: []journal.SecretRevision{},
+	}, Bindings{Caddy: binding})
+	if err != nil {
+		t.Fatal(err)
+	}
+	operation, err = recovered.Recover(context.Background())
+	if !errors.Is(err, ErrAdapter) || operation.State != journal.StateRolledBack || mechanism.state != 1 {
+		t.Fatalf("recovered operation=%#v state=%d err=%v", operation, mechanism.state, err)
+	}
+	foundRetry := false
+	for _, step := range operation.Steps {
+		if step.StepID == "verify-01" && step.Attempt == 2 && step.RetryOfInterrupted && step.Status == journal.StepFailed {
+			foundRetry = true
+		}
+	}
+	if !foundRetry {
+		t.Fatal("failed verification retry was not durably recorded")
+	}
+}
+
 func TestRegistryRejectsCapabilityAndSecretDrift(t *testing.T) {
 	root := filepath.Join(t.TempDir(), "journal")
 	j, err := journal.Create(root, "installation-a")
@@ -307,10 +463,36 @@ func TestRegistryRejectsCapabilityAndSecretDrift(t *testing.T) {
 	if !errors.Is(err, ErrInvalidInput) {
 		t.Fatalf("capability drift error=%v", err)
 	}
+	manifest.Components[0].Capabilities = []string{"configuration.replace"}
+	plan, err = stack.BuildPlan(manifest)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = New(j, plan, journal.ApprovalInput{ID: "approval-subset", ActorID: "operator-a", AuthorityDigest: testDigest("authority"), ExpiresAt: time.Now().Add(time.Hour), SecretRevisions: []journal.SecretRevision{}}, Bindings{Caddy: binding})
+	if !errors.Is(err, ErrInvalidInput) {
+		t.Fatalf("partial capability set error=%v", err)
+	}
+	manifest.Components[0].Capabilities = []string{"configuration.replace", "runtime.reload"}
+	plan, err = stack.BuildPlan(manifest)
+	if err != nil {
+		t.Fatal(err)
+	}
+	binding.artifactDigest = testDigest("other-artifact")
+	_, err = New(j, plan, journal.ApprovalInput{ID: "approval-artifact", ActorID: "operator-a", AuthorityDigest: testDigest("authority"), ExpiresAt: time.Now().Add(time.Hour), SecretRevisions: []journal.SecretRevision{}}, Bindings{Caddy: binding})
+	if !errors.Is(err, ErrInvalidInput) {
+		t.Fatalf("artifact drift error=%v", err)
+	}
+	binding.artifactDigest = testDigest("artifact")
+	binding.configurationDigest = testDigest("other-configuration")
+	_, err = New(j, plan, journal.ApprovalInput{ID: "approval-configuration", ActorID: "operator-a", AuthorityDigest: testDigest("authority"), ExpiresAt: time.Now().Add(time.Hour), SecretRevisions: []journal.SecretRevision{}}, Bindings{Caddy: binding})
+	if !errors.Is(err, ErrInvalidInput) {
+		t.Fatalf("configuration drift error=%v", err)
+	}
+	binding.configurationDigest = testDigest("configuration")
 
 	binding.secretSlots = []string{"token"}
 	binding.secretDigests = map[string]string{"token": testDigest("secret-a")}
-	manifest.Components[0].Capabilities = []string{}
+	manifest.Components[0].Capabilities = []string{"configuration.replace", "runtime.reload"}
 	manifest.Components[0].SecretSlots = []string{"token"}
 	plan, err = stack.BuildPlan(manifest)
 	if err != nil {
@@ -324,4 +506,16 @@ func TestRegistryRejectsCapabilityAndSecretDrift(t *testing.T) {
 
 func testDigest(value string) string {
 	return fmt.Sprintf("sha256:%x", sha256.Sum256([]byte(value)))
+}
+
+func TestImageArtifactDigest(t *testing.T) {
+	want := testDigest("image")
+	if got := imageArtifactDigest("registry.test/product@" + want); got != want {
+		t.Fatalf("digest=%q want=%q", got, want)
+	}
+	for _, image := range []string{"", "registry.test/product:latest", "registry.test/product@sha256:bad"} {
+		if got := imageArtifactDigest(image); got != "" {
+			t.Fatalf("image=%q digest=%q", image, got)
+		}
+	}
 }

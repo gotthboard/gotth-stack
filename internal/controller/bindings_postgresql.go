@@ -29,9 +29,9 @@ func BindPostgreSQL(componentID string, adapter *postgresql.Adapter, request pos
 			return false
 		}
 		if !observation.Summary.HadPrevious {
-			return observation.PrimaryState == postgresql.StateAbsent && observation.RollbackState == postgresql.StateAbsent
+			return observation.PrimaryState == postgresql.StateAbsent && observation.PrimaryPower == postgresql.PowerAbsent && observation.RollbackState == postgresql.StateAbsent && observation.RollbackPower == postgresql.PowerAbsent
 		}
-		return observation.PrimaryState == postgresql.StatePrevious && observation.PrimaryPower == postgresql.PowerStopped && observation.RollbackState == postgresql.StateAbsent
+		return observation.PrimaryState == postgresql.StatePrevious && observation.PrimaryPower == postgresql.PowerStopped && observation.RollbackState == postgresql.StateAbsent && observation.RollbackPower == postgresql.PowerAbsent
 	}
 	preserved := func(value []byte) bool {
 		observation, ok := decode(value)
@@ -39,23 +39,23 @@ func BindPostgreSQL(componentID string, adapter *postgresql.Adapter, request pos
 			return false
 		}
 		if !observation.Summary.HadPrevious {
-			return observation.PrimaryState == postgresql.StateAbsent && observation.RollbackState == postgresql.StateAbsent
+			return observation.PrimaryState == postgresql.StateAbsent && observation.PrimaryPower == postgresql.PowerAbsent && observation.RollbackState == postgresql.StateAbsent && observation.RollbackPower == postgresql.PowerAbsent
 		}
-		return observation.PrimaryState == postgresql.StateAbsent && observation.RollbackState == postgresql.StatePrevious && observation.RollbackPower == postgresql.PowerStopped
+		return observation.PrimaryState == postgresql.StateAbsent && observation.PrimaryPower == postgresql.PowerAbsent && observation.RollbackState == postgresql.StatePrevious && observation.RollbackPower == postgresql.PowerStopped
 	}
 	candidateStopped := func(value []byte) bool {
 		observation, ok := decode(value)
-		if !ok || observation.PrimaryState != postgresql.StateCandidate || observation.PrimaryPower != postgresql.PowerStopped {
+		if !ok || observation.StageState != postgresql.StateCandidate || observation.PrimaryState != postgresql.StateCandidate || observation.PrimaryPower != postgresql.PowerStopped {
 			return false
 		}
 		if observation.Summary.HadPrevious {
 			return observation.RollbackState == postgresql.StatePrevious && observation.RollbackPower == postgresql.PowerStopped
 		}
-		return observation.RollbackState == postgresql.StateAbsent
+		return observation.RollbackState == postgresql.StateAbsent && observation.RollbackPower == postgresql.PowerAbsent
 	}
 	candidateRunning := func(value []byte) bool {
 		observation, ok := decode(value)
-		if !ok || observation.PrimaryState != postgresql.StateCandidate || observation.PrimaryPower != postgresql.PowerRunning {
+		if !ok || observation.StageState != postgresql.StateCandidate || observation.PrimaryState != postgresql.StateCandidate || observation.PrimaryPower != postgresql.PowerRunning {
 			return false
 		}
 		if observation.Summary.HadPrevious {
@@ -65,11 +65,11 @@ func BindPostgreSQL(componentID string, adapter *postgresql.Adapter, request pos
 	}
 	previousRunning := func(value []byte) bool {
 		observation, ok := decode(value)
-		if !ok || observation.StageState != postgresql.StateCandidate || observation.RollbackState != postgresql.StateAbsent {
+		if !ok || observation.StageState != postgresql.StateCandidate || observation.RollbackState != postgresql.StateAbsent || observation.RollbackPower != postgresql.PowerAbsent {
 			return false
 		}
 		if !observation.Summary.HadPrevious {
-			return observation.PrimaryState == postgresql.StateAbsent
+			return observation.PrimaryState == postgresql.StateAbsent && observation.PrimaryPower == postgresql.PowerAbsent
 		}
 		power := postgresql.PowerStopped
 		if observation.Summary.PreviousRunning {
@@ -81,6 +81,7 @@ func BindPostgreSQL(componentID string, adapter *postgresql.Adapter, request pos
 	return &Binding{
 		componentID: componentID, adapterID: AdapterPostgreSQL,
 		capabilities: []string{"runtime.replace"}, secretSlots: []string{"password"}, secretDigests: map[string]string{"password": request.SecretRevisionDigest},
+		artifactDigest: imageArtifactDigest(request.Specification.Image), configurationDigest: request.ConfigurationDigest,
 		observe: observe,
 		preflight: func(ctx context.Context, operationID string) ([]byte, error) {
 			value := request

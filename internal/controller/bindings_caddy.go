@@ -42,20 +42,21 @@ func BindCaddy(componentID string, adapter *caddy.Adapter, request caddy.Request
 	}
 	fileCandidate := func(value []byte) bool {
 		observation, ok := decode(value)
-		return ok && observation.StageState == caddy.StatePresent && observation.FileState == caddy.StateCandidate && observation.FileTemporary == caddy.StateAbsent
+		return ok && observation.StageState == caddy.StatePresent && observation.FileState == caddy.StateCandidate && observation.FileTemporary == caddy.StateAbsent && observation.RuntimeState == caddy.StatePrevious
 	}
 	filePrevious := func(value []byte) bool {
 		observation, ok := decode(value)
-		return ok && observation.StageState == caddy.StatePresent && observation.FileState == caddy.StatePrevious && observation.FileTemporary == caddy.StateAbsent
+		return ok && observation.StageState == caddy.StatePresent && observation.FileState == caddy.StatePrevious && observation.FileTemporary == caddy.StateAbsent && (observation.RuntimeState == caddy.StatePrevious || observation.RuntimeState == caddy.StateCandidate)
 	}
 	runtimeCandidate := func(value []byte) bool {
 		observation, ok := decode(value)
-		return ok && observation.StageState == caddy.StatePresent && observation.FileState == caddy.StateCandidate && observation.RuntimeState == caddy.StateCandidate
+		return ok && observation.StageState == caddy.StatePresent && observation.FileState == caddy.StateCandidate && observation.FileTemporary == caddy.StateAbsent && observation.RuntimeState == caddy.StateCandidate
 	}
 	runtimePrevious := predicate(caddy.StatePrevious, caddy.StatePrevious)
 	binding := &Binding{
 		componentID: componentID, adapterID: AdapterCaddy,
 		capabilities: []string{"configuration.replace", "runtime.reload"}, secretSlots: []string{}, secretDigests: map[string]string{},
+		artifactDigest: adapter.ExecutableDigest(), configurationDigest: request.ExpectedDigest,
 		observe: observe, preflight: preflight,
 		stage: func(_ context.Context, _ string) error {
 			if prepared == nil {
@@ -88,10 +89,7 @@ func BindCaddy(componentID string, adapter *caddy.Adapter, request caddy.Request
 			{name: "activate", call: func(ctx context.Context, operationID string) error {
 				_, err := adapter.Activate(ctx, operationID)
 				return err
-			}, reached: runtimeCandidate, predecessor: func(value []byte) bool {
-				observation, ok := decode(value)
-				return ok && observation.RuntimeState == caddy.StatePrevious
-			}, reverse: func(ctx context.Context, operationID string) error {
+			}, reached: runtimeCandidate, predecessor: fileCandidate, reverse: func(ctx context.Context, operationID string) error {
 				_, err := adapter.Reactivate(ctx, operationID)
 				return err
 			}, reversed: runtimePrevious},

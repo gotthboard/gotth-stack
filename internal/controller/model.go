@@ -5,7 +5,9 @@ package controller
 
 import (
 	"context"
+	"encoding/hex"
 	"errors"
+	"strings"
 	"sync"
 
 	"github.com/gotthboard/gotth-stack/pkg/journal"
@@ -44,11 +46,13 @@ type Bindings struct {
 }
 
 type Binding struct {
-	componentID   string
-	adapterID     string
-	capabilities  []string
-	secretSlots   []string
-	secretDigests map[string]string
+	componentID         string
+	adapterID           string
+	capabilities        []string
+	secretSlots         []string
+	secretDigests       map[string]string
+	artifactDigest      string
+	configurationDigest string
 
 	observe           func(context.Context, string) ([]byte, error)
 	preflight         func(context.Context, string) ([]byte, error)
@@ -83,4 +87,19 @@ type Controller struct {
 
 type ExecuteInput struct {
 	OperationID string
+}
+
+func imageArtifactDigest(image string) string {
+	separator := strings.LastIndexByte(image, '@')
+	if separator < 0 {
+		return ""
+	}
+	value := image[separator+1:]
+	if len(value) != len("sha256:")+64 || !strings.HasPrefix(value, "sha256:") {
+		return ""
+	}
+	if _, err := hex.DecodeString(value[len("sha256:"):]); err != nil {
+		return ""
+	}
+	return value
 }

@@ -23,6 +23,16 @@ func (controller *Controller) Execute(ctx context.Context, input ExecuteInput) (
 	if err != nil {
 		return journal.Operation{}, err
 	}
+	if !operation.FinishedAt.IsZero() {
+		switch operation.State {
+		case journal.StateComplete:
+			return operation, nil
+		case journal.StateRecoveryRequired:
+			return operation, ErrRecoveryRequired
+		default:
+			return operation, ErrAdapter
+		}
+	}
 	if len(operation.Steps) != 0 {
 		return operation, ErrRecoveryRequired
 	}
@@ -107,6 +117,13 @@ func (controller *Controller) continueExecution(ctx context.Context, operation j
 		if err != nil {
 			if errors.Is(err, ErrRecoveryRequired) || errors.Is(err, ErrObservation) {
 				return operation, err
+			}
+			if hasRecoveryOnlyMutation(operation) {
+				finished, finishErr := controller.journal.FinishOperation(operation.ID, journal.OutcomeRecoveryRequired)
+				if finishErr != nil {
+					return operation, finishErr
+				}
+				return finished, ErrRecoveryRequired
 			}
 			return controller.rollback(ctx, operation)
 		}
@@ -209,7 +226,8 @@ func (controller *Controller) runStep(ctx context.Context, operation journal.Ope
 	if observeErr != nil {
 		return operation, ErrRecoveryRequired
 	}
-	if spec.reached(after) {
+	acceptReachedOnError := spec.mode == journal.ModeMutation || spec.phase == journal.PhasePreflight
+	if spec.reached(after) && (callErr == nil || acceptReachedOnError) {
 		return controller.journal.FinishStep(journal.StepResultInput{OperationID: operation.ID, StepID: spec.id, Attempt: attempt, Status: journal.StepSucceeded, ResultDigest: digest(after)})
 	}
 	if callErr != nil && (bytes.Equal(before, after) || spec.predecessor != nil && spec.predecessor(after)) {
