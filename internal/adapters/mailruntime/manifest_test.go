@@ -23,7 +23,7 @@ func validManifest() ReleaseManifest {
 		Roles:                roles,
 		Extensions:           []ExtensionArtifact{{Repository: "github.com/gotthboard/gotth-extension-webhook", Version: "1.0.0-alpha.1", ArtifactDigest: testDigest, ManifestDigest: testDigest}},
 		Schema:               SchemaRange{Minimum: 17, Current: 17, Maximum: 17},
-		Build:                BuildIdentity{GoVersion: "go1.26.6", GOOS: "linux", GOARCH: "amd64"},
+		Build:                BuildIdentity{GoVersion: "go1.26.6", GOOS: "linux", GOARCH: "amd64", BuildDateEpoch: 1789938083},
 	}
 }
 
@@ -125,6 +125,7 @@ func TestReleaseManifestValidationMatrix(t *testing.T) {
 		{name: "go", mutate: func(v *ReleaseManifest) { v.Build.GoVersion = "go1.26.5" }},
 		{name: "goos", mutate: func(v *ReleaseManifest) { v.Build.GOOS = "windows" }},
 		{name: "goarch", mutate: func(v *ReleaseManifest) { v.Build.GOARCH = "arm64" }},
+		{name: "build epoch", mutate: func(v *ReleaseManifest) { v.Build.BuildDateEpoch = 0 }},
 		{name: "missing role", mutate: func(v *ReleaseManifest) { v.Roles = v.Roles[:4] }},
 		{name: "role order", mutate: func(v *ReleaseManifest) { v.Roles[0], v.Roles[1] = v.Roles[1], v.Roles[0] }},
 		{name: "floating image", mutate: func(v *ReleaseManifest) { v.Roles[0].Image = "ghcr.io/gotthboard/gotth-mail-control-plane:latest" }},

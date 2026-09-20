@@ -73,9 +73,10 @@ type SchemaRange struct {
 }
 
 type BuildIdentity struct {
-	GoVersion string `json:"go_version"`
-	GOOS      string `json:"goos"`
-	GOARCH    string `json:"goarch"`
+	GoVersion      string `json:"go_version"`
+	GOOS           string `json:"goos"`
+	GOARCH         string `json:"goarch"`
+	BuildDateEpoch int64  `json:"build_date_epoch"`
 }
 
 type ReleaseManifest struct {
@@ -170,7 +171,7 @@ func validReleaseManifest(manifest ReleaseManifest) bool {
 	if manifest.SchemaVersion != ManifestSchemaVersion || !versionPattern.MatchString(manifest.ProductVersion) || manifest.Tag != "v"+manifest.ProductVersion || !commitPattern.MatchString(manifest.TagObject) || !commitPattern.MatchString(manifest.SourceCommit) || manifest.ForgejoRefCommit != manifest.SourceCommit || manifest.GitHubRefCommit != manifest.SourceCommit || manifest.ForgejoRepository != ForgejoRepository || manifest.GitHubRepository != GitHubRepository {
 		return false
 	}
-	if !validFileArtifact(manifest.ConfigurationArchive) || !strings.HasSuffix(manifest.ConfigurationArchive.Name, ".tar") || manifest.ConfigurationArchive.Size > MaxConfigurationArchiveBytes || !validMembers(manifest.ConfigurationMembers) || manifest.Schema.Minimum == 0 || manifest.Schema.Minimum > manifest.Schema.Current || manifest.Schema.Current > manifest.Schema.Maximum || manifest.Build.GoVersion != "go1.26.6" || manifest.Build.GOOS != "linux" || manifest.Build.GOARCH != "amd64" {
+	if !validFileArtifact(manifest.ConfigurationArchive) || !strings.HasSuffix(manifest.ConfigurationArchive.Name, ".tar") || manifest.ConfigurationArchive.Size > MaxConfigurationArchiveBytes || !validMembers(manifest.ConfigurationMembers) || manifest.Schema.Minimum == 0 || manifest.Schema.Minimum > manifest.Schema.Current || manifest.Schema.Current > manifest.Schema.Maximum || manifest.Build.GoVersion != "go1.26.6" || manifest.Build.GOOS != "linux" || manifest.Build.GOARCH != "amd64" || manifest.Build.BuildDateEpoch <= 0 {
 		return false
 	}
 	if len(manifest.Roles) != len(requiredRoles) {
