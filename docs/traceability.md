@@ -14,7 +14,7 @@ remain authoritative.
 | `STACK-MAIL-005` | file-only secret flow | controller secret revision resolver | owner/mode/symlink/descriptor/redaction tests | contracted |
 | `STACK-MAIL-006/007` | runtime and storage boundary | typed runtime adapters | exact effective inspection and persistent-root identity tests | contracted |
 | `STACK-MAIL-008/009` | configuration and preflight | product artifact plus adapter preflight | native config checks and no-reference-fixture source scan | contracted |
-| `STACK-MAIL-010` | lifecycle and journal binding | controller | crash-point, unknown-outcome, retry, reconciliation, and rollback tests | contracted |
+| `STACK-MAIL-010` | lifecycle and journal binding | `internal/controller`, `pkg/journal` | crash-point, unknown-outcome, retry, reconciliation, and reverse rollback tests | verified candidate `148659d` |
 | `STACK-MAIL-011` | active health | adapter and controller health gates | real SMTP/IMAP/Rspamd/product/extension/PostgreSQL checks | contracted |
 | `STACK-MAIL-012` | identity lifecycle | identity/provider child | disposable browser OIDC and SCIM lifecycle/outage tests | contracted |
 | `STACK-MAIL-013/014` | backup, restore, upgrade, rollback | acceptance child | consistent capture, isolated restore, migration edge, and reverse tests | contracted |
