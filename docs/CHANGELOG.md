@@ -18,7 +18,7 @@
 
 ### 2026-09-20 14:56 CDT — Prove real Rspamd replacement and preserve mutable mount identity
 
-Commit: `current commit; hash assigned by Git after commit`
+Commits: `7183ec3`, `370aabd`
 
 Affected files:
 
@@ -60,10 +60,12 @@ Verification:
   on the development host in 47.8 seconds and preserves its SQLite Bayes file;
 - Mail's release assembler produces identical artifacts twice, and Stack
   accepts the exact manifest plus all eight archive members.
+- two cold reviews and the full repository gate admit the runtime-adapter
+  child; the journal-bound controller is now the active workstream.
 
 ### 2026-09-20 14:25 CDT — Admit Dovecot's bounded login chroot
 
-Commit: `current commit; hash assigned by Git after commit`
+Commit: `aa90b7c`
 
 Affected files:
 
@@ -89,7 +91,7 @@ Verification:
 
 ### 2026-09-20 14:00 CDT — Make the private runtime tmpfs usable by fixed Mail UIDs
 
-Commit: `current commit; hash assigned by Git after commit`
+Commit: `292a5d9`
 
 Affected files:
 
@@ -119,7 +121,7 @@ Verification:
 
 ### 2026-09-20 13:45 CDT — Wait for bounded Mail role readiness
 
-Commit: `current commit; hash assigned by Git after commit`
+Commit: `800ecf9`
 
 Affected files:
 
@@ -149,7 +151,7 @@ Verification:
 
 ### 2026-09-20 13:34 CDT — Bind Mail runtime adapters to production secrets and ports
 
-Commit: `current commit; hash assigned by Git after commit`
+Commit: `301cb77`
 
 Affected files:
 
