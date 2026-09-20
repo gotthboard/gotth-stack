@@ -11,6 +11,8 @@
 - Explicitly rejected the development reference Compose stack as production
   input; Mailu, fixture secrets, runtime package installation, Roundcube, and
   Telegram fixtures are not production components.
+- Full repository verification and two cold contract reviews passed; the
+  contract child is complete and the typed runtime-adapter child is active.
 
 ## Unreleased
 
