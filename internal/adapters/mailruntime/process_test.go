@@ -24,6 +24,9 @@ func runtimeDefinition(role Role) roleDefinition {
 	if role == RolePostfix || role == RoleDovecot {
 		definition.user = "0:0"
 		definition.capAdd = []string{"CHOWN", "DAC_OVERRIDE", "DAC_READ_SEARCH", "FOWNER", "NET_BIND_SERVICE", "SETGID", "SETUID"}
+		if role == RoleDovecot {
+			definition.capAdd = append(definition.capAdd, "SYS_CHROOT")
+		}
 	}
 	return definition
 }
@@ -89,6 +92,9 @@ func TestCreateArgumentsRoleBoundary(t *testing.T) {
 			}
 			if (role == RolePostfix || role == RoleDovecot) != strings.Contains(joined, " --cap-add CHOWN ") {
 				t.Fatalf("wrong capability policy in %q", joined)
+			}
+			if (role == RoleDovecot) != strings.Contains(joined, " --cap-add SYS_CHROOT ") {
+				t.Fatalf("wrong chroot capability policy in %q", joined)
 			}
 		})
 	}

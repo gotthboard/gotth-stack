@@ -16,6 +16,32 @@
 
 ## Unreleased
 
+### 2026-09-20 14:25 CDT — Admit Dovecot's bounded login chroot
+
+Commit: `current commit; hash assigned by Git after commit`
+
+Affected files:
+
+- `internal/adapters/mailruntime/open_linux.go`;
+- `internal/adapters/mailruntime/process_test.go`;
+- `docs/CHANGELOG.md`.
+
+Explanation:
+
+The exact production Dovecot 2.4 login service uses its documented internal
+chroot and failed under the adapter's prior capability set. Added `SYS_CHROOT`
+only to the fixed Dovecot role. Postfix and all non-root roles retain their
+existing narrower sets, and effective-container inspection still rejects any
+capability not present in the role definition.
+
+Verification:
+
+- focused Mail runtime serial, race, and vet checks pass;
+- role argument coverage proves that only Dovecot receives `SYS_CHROOT`;
+- the combined production smoke passes Dovecot startup, LMTP delivery, and
+  authenticated IMAPS readback under the exact adapter capability set;
+- `git diff --check` passes.
+
 ### 2026-09-20 14:00 CDT — Make the private runtime tmpfs usable by fixed Mail UIDs
 
 Commit: `current commit; hash assigned by Git after commit`

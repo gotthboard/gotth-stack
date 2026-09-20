@@ -115,6 +115,9 @@ func openAdapter(options RuntimeOptions, role Role, mounts []mountSpec, ports []
 	if role == RolePostfix || role == RoleDovecot {
 		definition.user = "0:0"
 		definition.capAdd = []string{"CHOWN", "DAC_OVERRIDE", "DAC_READ_SEARCH", "FOWNER", "NET_BIND_SERVICE", "SETGID", "SETUID"}
+		if role == RoleDovecot {
+			definition.capAdd = append(definition.capAdd, "SYS_CHROOT")
+		}
 	}
 	definition.mounts = append(definition.mounts, mountSpec{source: options.ConfigurationRoot, destination: configTarget, readOnly: true, kind: mountDirectory})
 	definition.mounts = append(definition.mounts, mounts...)
