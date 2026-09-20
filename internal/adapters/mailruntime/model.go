@@ -13,7 +13,8 @@ const (
 	RuntimeSchemaVersion = 1
 	MaxOutputBytes       = 4 << 20
 	MaxBinaryBytes       = 256 << 20
-	defaultTimeout       = 20 * time.Second
+	defaultTimeout       = 60 * time.Second
+	healthRetryInterval  = 250 * time.Millisecond
 	dockerHost           = "unix:///var/run/docker.sock"
 )
 

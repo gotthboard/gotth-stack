@@ -16,6 +16,36 @@
 
 ## Unreleased
 
+### 2026-09-20 13:45 CDT — Wait for bounded Mail role readiness
+
+Commit: `current commit; hash assigned by Git after commit`
+
+Affected files:
+
+- `internal/adapters/mailruntime/actions.go`;
+- `internal/adapters/mailruntime/model.go`;
+- `internal/adapters/mailruntime/runtime_test.go`;
+- `docs/CHANGELOG.md`.
+
+Explanation:
+
+Replaced the one-shot container health check with a bounded readiness loop.
+The production Rspamd role performs a first-start ruleset compilation that can
+take roughly thirty seconds on the deployment-class development host; treating
+the first failed probe as terminal made a healthy immutable container
+undeployable. The adapter now retries at a fixed interval only within its
+existing operation context, whose default bound is raised to sixty seconds and
+whose caller-supplied one-minute maximum is unchanged. A container that never
+becomes ready still fails closed as `ErrContainer` and remains subject to the
+existing rollback state machine.
+
+Verification:
+
+- a regression test proves two transient failures followed by readiness;
+- the existing failure and rollback tests retain the public error contract;
+- focused serial, race, and vet checks pass for the Mail runtime adapter;
+- `git diff --check` passes.
+
 ### 2026-09-20 13:34 CDT — Bind Mail runtime adapters to production secrets and ports
 
 Commit: `current commit; hash assigned by Git after commit`

@@ -23,9 +23,11 @@ type fakeRuntimeContainer struct {
 }
 
 type fakeRuntimeDocker struct {
-	containers map[string]fakeRuntimeContainer
-	fail       commandKind
-	network    bool
+	containers     map[string]fakeRuntimeContainer
+	fail           commandKind
+	network        bool
+	healthFailures int
+	healthChecks   int
 }
 
 func (runner *fakeRuntimeDocker) Run(_ context.Context, _ string, request commandRequest, stdout, _ io.Writer) error {
@@ -120,6 +122,11 @@ func (runner *fakeRuntimeDocker) Run(_ context.Context, _ string, request comman
 		delete(runner.containers, request.name)
 		return nil
 	case commandHealth:
+		runner.healthChecks++
+		if runner.healthFailures > 0 {
+			runner.healthFailures--
+			return errors.New("starting")
+		}
 		container, ok := runner.containers[request.name]
 		if !ok || !container.running {
 			return errors.New("unhealthy")
@@ -297,6 +304,28 @@ func TestFreshInstallAndRollbackStateMachine(t *testing.T) {
 		if _, err := action(context.Background(), candidate.OperationID); err != nil {
 			t.Fatal(err)
 		}
+	}
+}
+
+func TestVerifyCandidateRetriesBoundedColdStart(t *testing.T) {
+	fixture := newRuntimeFixture(t)
+	defer fixture.close()
+	candidate := fixture.candidate("cold-start", "a", "b")
+	prepared, _ := fixture.preflight(candidate)
+	if _, err := prepared.Stage(); err != nil {
+		t.Fatal(err)
+	}
+	for _, action := range []func(context.Context, string) (Summary, error){fixture.adapter.StopPrevious, fixture.adapter.RenamePrevious, fixture.adapter.CreateCandidate, fixture.adapter.StartCandidate} {
+		if _, err := action(context.Background(), candidate.OperationID); err != nil {
+			t.Fatal(err)
+		}
+	}
+	fixture.runner.healthFailures = 2
+	if _, err := fixture.adapter.VerifyCandidate(context.Background(), candidate.OperationID); err != nil {
+		t.Fatal(err)
+	}
+	if fixture.runner.healthChecks != 3 {
+		t.Fatalf("health checks=%d, want 3", fixture.runner.healthChecks)
 	}
 }
 

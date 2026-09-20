@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os"
 	"reflect"
+	"time"
 )
 
 func (adapter *adapter) Observe(ctx context.Context, operationID string) (Observation, error) {
@@ -369,8 +370,16 @@ func mutationResult(err error) error {
 }
 
 func (adapter *adapter) probe(ctx context.Context, spec managedSpec) error {
-	if _, err := adapter.run(ctx, commandRequest{kind: commandHealth, name: spec.ContainerName, definition: adapter.definition}, false); err != nil {
-		return ErrContainer
+	for {
+		if _, err := adapter.run(ctx, commandRequest{kind: commandHealth, name: spec.ContainerName, definition: adapter.definition}, false); err == nil {
+			return nil
+		}
+		timer := time.NewTimer(healthRetryInterval)
+		select {
+		case <-ctx.Done():
+			timer.Stop()
+			return ErrContainer
+		case <-timer.C:
+		}
 	}
-	return nil
 }
