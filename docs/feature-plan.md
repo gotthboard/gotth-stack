@@ -28,10 +28,11 @@ features are complete.
    secrets, exact observation, health, recovery, and persistent-state-
    preserving rollback. Completing any individual child does not complete the
    parent workstream or unblock an apply command by itself.
-5. Mail stack (historical ID `v3.mail-stack`) — GOTTH Mail control-plane, front/proxy, Postfix, Dovecot,
-   and Rspamd adapters; OIDC/SCIM composition; per-domain DNS/certificate
-   provider seams; mail-flow health; backup; and rollback. Mailu is not a
-   runtime component.
+5. Mail stack (historical ID `v3.mail-stack`) — decomposed into a frozen
+   topology/release/backup contract, five typed role adapters, journal-bound
+   controller execution, identity/certificate/DNS composition, and complete
+   disposable acceptance. Mailu and the reference Compose fixtures are not
+   runtime components.
 6. Board stack (historical ID `v4.board-stack`) — GOTTH Board adapter, isolated Authentik/PostgreSQL/Caddy
    composition, migration/readiness proof, backup, and rollback.
 7. Administrator UI (historical ID `v5.admin-ui`) — first-run and operations UI rendered by the controller with

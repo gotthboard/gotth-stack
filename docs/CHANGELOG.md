@@ -1,5 +1,17 @@
 # Changelog
 
+## 2026-09-20 — Decompose and specify GOTTH Mail deployment
+
+- Activated the Mail stack workstream and froze the missing production
+  artifact, topology, listener, certificate, secret, storage, lifecycle,
+  backup, restore, recovery, monitoring, and verification contracts.
+- Split implementation into typed role adapters, journal-bound controller
+  execution, identity/provider composition, and complete disposable
+  acceptance. No apply path or live mutation was added.
+- Explicitly rejected the development reference Compose stack as production
+  input; Mailu, fixture secrets, runtime package installation, Roundcube, and
+  Telegram fixtures are not production components.
+
 ## Unreleased
 
 ### 2026-09-14 — Complete the Authentik runtime adapter slice

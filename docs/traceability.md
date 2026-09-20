@@ -4,6 +4,22 @@ GOTTH Stack uses DO-178C-inspired traceability. This is not a certification
 claim. The table is an admission index; source and raw verification evidence
 remain authoritative.
 
+## GOTTH Mail stack
+
+| Requirement | Design / specification | Planned implementation | Verification contract | Status |
+| --- | --- | --- | --- | --- |
+| `STACK-MAIL-001` | release identity in `mail-stack-prd.md` | product release manifest parser | strict manifest/archive/version/digest tests | contracted |
+| `STACK-MAIL-002` | role authority in `mail-stack-architecture.md` | five typed `mailruntime` role adapters | role capability and cross-role denial matrix | contracted |
+| `STACK-MAIL-003/004` | fixed topology and certificate ownership | front plus Caddy composition | port collision, listener, TLS, and ACME ownership tests | contracted |
+| `STACK-MAIL-005` | file-only secret flow | controller secret revision resolver | owner/mode/symlink/descriptor/redaction tests | contracted |
+| `STACK-MAIL-006/007` | runtime and storage boundary | typed runtime adapters | exact effective inspection and persistent-root identity tests | contracted |
+| `STACK-MAIL-008/009` | configuration and preflight | product artifact plus adapter preflight | native config checks and no-reference-fixture source scan | contracted |
+| `STACK-MAIL-010` | lifecycle and journal binding | controller | crash-point, unknown-outcome, retry, reconciliation, and rollback tests | contracted |
+| `STACK-MAIL-011` | active health | adapter and controller health gates | real SMTP/IMAP/Rspamd/product/extension/PostgreSQL checks | contracted |
+| `STACK-MAIL-012` | identity lifecycle | identity/provider child | disposable browser OIDC and SCIM lifecycle/outage tests | contracted |
+| `STACK-MAIL-013/014` | backup, restore, upgrade, rollback | acceptance child | consistent capture, isolated restore, migration edge, and reverse tests | contracted |
+| `STACK-MAIL-015/016` | disposable and production admission | acceptance evidence | two-domain full lifecycle, monitoring, DNS/rDNS, and exact-candidate proof | contracted |
+
 ## Approval and recovery journal
 
 | Requirement | Design / specification | Planned implementation | Verification contract | Status |

@@ -1,7 +1,7 @@
 schema_version = 1
 project = "gotth-stack"
 profile = "strict"
-active = ""
+active = "v3.mail-stack.contract"
 
 [settings]
 worktree_root = "worktrees"
@@ -436,11 +436,12 @@ slug = "mail-stack"
 name = "GOTTH Mail control plane and daemon deployment"
 namespace = "stack"
 parent = ""
-state = "planned"
+state = "in_progress"
 risk = "critical"
 assurance = "traceable-tests"
 created_at = "2026-09-14T04:42:00Z"
-updated_at = "2026-09-14T04:42:00Z"
+activated_at = "2026-09-20T17:20:00Z"
+updated_at = "2026-09-20T17:20:00Z"
 folder = "workflow/features/v3-mail-stack"
 worktree = "worktrees/v3-mail-stack"
 branch = "workflow/feature/v3-mail-stack"
@@ -452,6 +453,149 @@ acceptance = ["Disposable GOTTH Mail control-plane Postfix Dovecot Rspamd and fr
 
 [[feature."v3.mail-stack".dependency]]
 id = "v2.platform-adapters"
+type = "prerequisite"
+state = "satisfied"
+evidence = "workflow/features/v2-platform-adapters/README.md"
+satisfied_at = "2026-09-20T17:20:00Z"
+source_commit = "fc86ba250a6690e8e2f0f392c4be7ef9b233fb9d"
+
+[feature."v3.mail-stack.contract"]
+id = "v3.mail-stack.contract"
+slug = "contract"
+name = "Freeze the production mail stack contract"
+namespace = "stack"
+parent = "v3.mail-stack"
+state = "in_progress"
+risk = "critical"
+assurance = "traceable-tests"
+created_at = "2026-09-20T17:20:00Z"
+activated_at = "2026-09-20T17:20:00Z"
+updated_at = "2026-09-20T17:20:00Z"
+folder = "workflow/features/v3-mail-stack/contract"
+worktree = "/home/linus/.openclaw/workspace/.artifacts/gotth-stack-mail"
+branch = "workflow/feature/v3-mail-stack"
+scope = ["Production release artifact contract", "Listener and certificate ownership", "Five role authority boundaries", "File-only secret transport", "Backup restore upgrade rollback and recovery contract", "Verification decomposition"]
+non_goals = ["Runtime adapter code", "Controller apply", "Live host mutation", "DNS provider implementation", "Production secret creation", "Release or deployment"]
+affected_files = ["docs/mail-stack-*.md", "docs/feature-plan.md", "docs/traceability.md", "docs/CHANGELOG.md", "workflow/features/v3-mail-stack/**", "workflow.toml", "workflow.events.jsonl"]
+invariants = ["Reference Compose is not production", "Mailu is not a runtime component", "No hidden manual mutation path", "No hostname port certificate or secret has two owners", "No later child is treated as implemented"]
+acceptance = ["STACK-MAIL-001 through STACK-MAIL-016 have explicit design implementation and verification contracts", "Feature decomposition preserves one active child", "Workflow and document audits pass", "Two cold reviews accept the contract"]
+
+[feature."v3.mail-stack.contract".rollback]
+strategy = "revert_contract_commit_before_runtime_implementation"
+notes = "This child changes documentation and workflow state only"
+data_loss_risk = false
+requires_migration_down = false
+
+[[feature."v3.mail-stack.contract".dependency]]
+id = "v2.platform-adapters"
+type = "prerequisite"
+state = "satisfied"
+evidence = "workflow/features/v2-platform-adapters/README.md"
+satisfied_at = "2026-09-20T17:20:00Z"
+source_commit = "fc86ba250a6690e8e2f0f392c4be7ef9b233fb9d"
+
+[feature."v3.mail-stack.runtime-adapters"]
+id = "v3.mail-stack.runtime-adapters"
+slug = "runtime-adapters"
+name = "Implement typed GOTTH Mail role adapters"
+namespace = "stack"
+parent = "v3.mail-stack"
+state = "planned"
+risk = "critical"
+assurance = "traceable-tests"
+created_at = "2026-09-20T17:20:00Z"
+updated_at = "2026-09-20T17:20:00Z"
+folder = "workflow/features/v3-mail-stack/runtime-adapters"
+worktree = "worktrees/v3-mail-stack-runtime-adapters"
+branch = "workflow/feature/v3-mail-stack-runtime-adapters"
+scope = ["Private fixed Docker mechanism", "Typed GOTTH Mail control plane adapter", "Typed mail front adapter", "Typed Postfix adapter", "Typed Dovecot adapter", "Typed Rspamd adapter", "Role replacement observation recovery and rollback"]
+non_goals = ["Controller apply", "Generic Docker executor", "Image builds or pulls", "Product schema migration", "Live deployment"]
+affected_files = ["internal/adapters/mailruntime/**", "docs/**", "workflow/**", "workflow.toml", "workflow.events.jsonl"]
+invariants = ["Role constructors expose no arbitrary arguments", "Each role receives only its declared ports mounts secrets and capabilities", "Persistent state is never deleted", "Every mutation remains separately journalable"]
+acceptance = ["Per-role unit hostile race repeat shuffle coverage and real disposable replacement tests pass", "Effective runtime inspection proves least privilege", "No controller or live target is introduced"]
+
+[[feature."v3.mail-stack.runtime-adapters".dependency]]
+id = "v3.mail-stack.contract"
+type = "prerequisite"
+state = "unresolved"
+
+[feature."v3.mail-stack.controller"]
+id = "v3.mail-stack.controller"
+slug = "controller"
+name = "Bind exact approvals and journal steps to admitted adapters"
+namespace = "stack"
+parent = "v3.mail-stack"
+state = "planned"
+risk = "critical"
+assurance = "traceable-tests"
+created_at = "2026-09-20T17:20:00Z"
+updated_at = "2026-09-20T17:20:00Z"
+folder = "workflow/features/v3-mail-stack/controller"
+worktree = "worktrees/v3-mail-stack-controller"
+branch = "workflow/feature/v3-mail-stack-controller"
+scope = ["Closed adapter registry", "Secret revision resolver", "Approval projection", "Write-before-effect execution", "Observation and reconciliation", "Reverse rollback coordination"]
+non_goals = ["Arbitrary command execution", "Generic plugin loading", "Secret creation or display", "Web administrator", "Live deployment"]
+affected_files = ["internal/controller/**", "cmd/gotth-stack/**", "pkg/**", "docs/**", "workflow/**", "workflow.toml", "workflow.events.jsonl"]
+invariants = ["No mutation without exact durable approval", "Unknown outcomes never retry blindly", "CLI accepts no command path environment or adapter implementation input", "Secrets remain file references and revision digests"]
+acceptance = ["Crash-point and recovery matrix passes across platform and mail adapters", "Rollback or recovery-required is honest for every mutation", "No generic executor or shell exists"]
+
+[[feature."v3.mail-stack.controller".dependency]]
+id = "v3.mail-stack.runtime-adapters"
+type = "prerequisite"
+state = "unresolved"
+
+[feature."v3.mail-stack.identity-provider"]
+id = "v3.mail-stack.identity-provider"
+slug = "identity-provider"
+name = "Compose identity certificate and DNS provider boundaries"
+namespace = "stack"
+parent = "v3.mail-stack"
+state = "planned"
+risk = "critical"
+assurance = "traceable-tests"
+created_at = "2026-09-20T17:20:00Z"
+updated_at = "2026-09-20T17:20:00Z"
+folder = "workflow/features/v3-mail-stack/identity-provider"
+worktree = "worktrees/v3-mail-stack-identity-provider"
+branch = "workflow/feature/v3-mail-stack-identity-provider"
+scope = ["Caddy route composition", "Authentik GOTTH Mail tenant desired state", "OIDC and SCIM lifecycle", "Mail certificate ownership", "Admitted DNS provider extension grant"]
+non_goals = ["Provider-specific code inside Stack", "ID-token role authority", "Shared mail and Authentik availability", "Live deployment before disposable proof"]
+affected_files = ["internal/**", "integration/**", "docs/**", "workflow/**", "workflow.toml", "workflow.events.jsonl"]
+invariants = ["Caddy and mail front never claim the same listener or certificate", "Durable role projection remains product-owned", "Mail delivery survives Authentik outage", "Provider authority is exact and independently admitted"]
+acceptance = ["Disposable browser login and SCIM lifecycle pass", "DNS and TLS desired state is exact and bounded", "Authentik outage leaves existing mail delivery and lookup healthy"]
+
+[[feature."v3.mail-stack.identity-provider".dependency]]
+id = "v3.mail-stack.controller"
+type = "prerequisite"
+state = "unresolved"
+
+[[feature."v3.mail-stack.identity-provider".dependency]]
+id = "v6.provider-extensions"
+type = "prerequisite"
+state = "unresolved"
+
+[feature."v3.mail-stack.acceptance"]
+id = "v3.mail-stack.acceptance"
+slug = "acceptance"
+name = "Prove complete mail stack lifecycle and recovery"
+namespace = "stack"
+parent = "v3.mail-stack"
+state = "planned"
+risk = "critical"
+assurance = "traceable-tests"
+created_at = "2026-09-20T17:20:00Z"
+updated_at = "2026-09-20T17:20:00Z"
+folder = "workflow/features/v3-mail-stack/acceptance"
+worktree = "worktrees/v3-mail-stack-acceptance"
+branch = "workflow/feature/v3-mail-stack-acceptance"
+scope = ["Disposable full-stack install", "Two-domain mail flow", "Upgrade", "Verified backup and isolated restore", "Rollback", "Restart", "Interrupted-mutation recovery", "Monitoring and security evidence"]
+non_goals = ["Production mutation", "Owner physical acceptance", "Stable release", "Unverified manual recovery"]
+affected_files = ["integration/**", "scripts/**", "docs/**", "workflow/**", "workflow.toml", "workflow.events.jsonl"]
+invariants = ["Production is not used as a test fixture", "Every destructive or upgrade path has verified backup authority", "Test artifacts contain no production secret or mailbox data"]
+acceptance = ["STACK-MAIL-001 through STACK-MAIL-016 pass on one exact candidate", "Fresh install upgrade restore rollback and crash recovery are repeatable", "Security monitoring accessibility and mail-flow evidence is complete"]
+
+[[feature."v3.mail-stack.acceptance".dependency]]
+id = "v3.mail-stack.identity-provider"
 type = "prerequisite"
 state = "unresolved"
 

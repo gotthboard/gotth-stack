@@ -1,5 +1,9 @@
 # V3 Mail stack
 
-Planned. Separate adapters for the GOTTH Mail control plane, mail front/proxy,
-Postfix, Dovecot, and Rspamd, plus identity, multi-domain mail health, backup,
-restore, rollback, and provider seams. Mailu is not a runtime component.
+In progress. The first child freezes the missing production deployment
+contract before mutation code exists. Later children implement five typed role
+adapters, journal-bound controller execution, identity/provider composition,
+and disposable install/upgrade/backup/restore/rollback acceptance.
+
+Mailu, the reference Compose fixtures, runtime package installation,
+development secrets, and Telegram fixtures are not production components.
