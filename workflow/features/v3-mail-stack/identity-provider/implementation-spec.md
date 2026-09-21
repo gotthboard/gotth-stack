@@ -64,11 +64,12 @@ one-shot SCIM import reference is `/run/secrets/scim-client-token`.
 
 DKIM is a canonical base64 exact TXT value bounded to the provider's 512-byte
 record-data limit. Report destinations are exact `mailto:`
-addresses inside the zone with mailboxes bounded to 254 bytes. V1 accepts only
-lowercase ASCII dot-atom local parts whose characters are valid unescaped in
-both RFC 5322 and RFC 6068; percent-encoded, quoted, header-bearing, and
-internationalized forms reject. Every generated record's data is independently
-bounded to the provider's 512-byte limit. TTL is fixed at 600 seconds.
+addresses inside the zone with mailboxes bounded to 254 bytes and local parts
+bounded to 64 bytes. V1 accepts only lowercase ASCII dot-atom local parts whose
+characters are valid unescaped in both RFC 5322 and RFC 6068; percent-encoded,
+quoted, header-bearing, and internationalized forms reject. Every generated
+record's data is independently bounded to the provider's 512-byte limit. TTL
+is fixed at 600 seconds.
 Duplicate logical records reject before rendering.
 
 ## Fixed desired state

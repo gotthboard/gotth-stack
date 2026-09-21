@@ -144,6 +144,7 @@ const (
 	scimTokenFile             = "/run/secrets/scim-client-token"
 	maxProviderRecordDataSize = 512
 	maxMailboxSize            = 254
+	maxMailboxLocalPartSize   = 64
 )
 
 func Compose(input Input) (Result, error) {
@@ -503,7 +504,7 @@ func validReportAddress(value, zone string) bool {
 }
 
 func validReportLocalPart(value string) bool {
-	if value == "" || value[0] == '.' || value[len(value)-1] == '.' || strings.Contains(value, "..") {
+	if value == "" || len(value) > maxMailboxLocalPartSize || value[0] == '.' || value[len(value)-1] == '.' || strings.Contains(value, "..") {
 		return false
 	}
 	for _, character := range []byte(value) {

@@ -206,6 +206,7 @@ func TestClosedHelpersRejectAmbiguity(t *testing.T) {
 		"mailto:.a@example.test", "mailto:a..b@example.test", "mailto:a/@example.test",
 		"mailto:a?b@example.test", "mailto:a#b@example.test", "mailto:a%b@example.test",
 		"mailto:a&b@example.test", "mailto:a=b@example.test", "mailto:é@example.test",
+		"mailto:" + strings.Repeat("a", maxMailboxLocalPartSize+1) + "@example.test",
 	} {
 		if validReportAddress(value, "example.test") {
 			t.Errorf("noncanonical report URI %q accepted", value)
