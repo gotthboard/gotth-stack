@@ -54,6 +54,9 @@ ICANN-managed suffix in the pinned Public Suffix List snapshot and must not be
 under `.arpa` or any non-ARPA name in the IANA Special-Use Domain Names
 registry snapshot dated 2026-05-22. Disposable mode admits `.test` plus
 documentation IPs.
+Production address validation rejects every non-globally-reachable range in
+the IANA IPv4/IPv6 special-purpose registry snapshot verified 2026-09-20 and
+rejects IPv4-mapped IPv6 addresses explicitly.
 Upstreams are canonical `host:port` values whose hosts are literal loopback or
 private IP addresses. Secret references are not inputs. OIDC is fixed to the
 mail runtime adapter target `/run/secrets/oidc-client-secret`; the distinct

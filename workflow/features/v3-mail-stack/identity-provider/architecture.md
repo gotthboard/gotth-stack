@@ -73,6 +73,11 @@ every non-ARPA domain in the IANA Special-Use Domain Names registry snapshot
 dated 2026-05-22 are rejected. Rejecting all `.arpa` zones also covers every
 ARPA entry in that registry.
 
+Production addresses use a closed IANA special-purpose registry snapshot
+verified 2026-09-20. Non-globally-reachable ranges and IPv4-mapped IPv6
+addresses are rejected; the latter cannot evade IPv4 policy by being supplied
+through the optional IPv6 field.
+
 ## Failure behavior
 
 Validation returns fixed sentinel classes without echoing attacker-controlled

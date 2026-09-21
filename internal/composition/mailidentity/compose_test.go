@@ -147,7 +147,7 @@ func TestComposeRejectsUnverifiedAdmissionAndInvalidInputs(t *testing.T) {
 }
 
 func TestProductionAddressAndReservedZoneValidation(t *testing.T) {
-	for _, raw := range []string{"10.0.0.1", "100.64.0.1", "192.0.0.1", "198.18.0.1", "203.0.113.1", "224.0.0.1", "64:ff9b::1", "2001::1", "2001:db8::1", "2002::1", "3fff::1", "fc00::1"} {
+	for _, raw := range []string{"10.0.0.1", "100.64.0.1", "192.0.0.1", "198.18.0.1", "203.0.113.1", "224.0.0.1", "::ffff:10.0.0.1", "::ffff:8.8.8.8", "64:ff9b::1", "100:0:0:1::1", "2001::1", "2001:db8::1", "2002::1", "3fff::1", "5f00::1", "fc00::1"} {
 		ipv4 := !strings.Contains(raw, ":")
 		if _, err := validateAddress(raw, ipv4, EnvironmentProduction); !errors.Is(err, ErrInvalidInput) {
 			t.Errorf("non-public production address %q err=%v", raw, err)

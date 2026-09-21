@@ -129,9 +129,10 @@ var (
 		netip.MustParsePrefix("192.168.0.0/16"), netip.MustParsePrefix("198.18.0.0/15"), netip.MustParsePrefix("198.51.100.0/24"),
 		netip.MustParsePrefix("203.0.113.0/24"), netip.MustParsePrefix("224.0.0.0/4"), netip.MustParsePrefix("240.0.0.0/4"),
 		netip.MustParsePrefix("::/128"), netip.MustParsePrefix("::1/128"), netip.MustParsePrefix("64:ff9b::/96"),
-		netip.MustParsePrefix("64:ff9b:1::/48"), netip.MustParsePrefix("100::/64"), netip.MustParsePrefix("2001::/23"),
+		netip.MustParsePrefix("64:ff9b:1::/48"), netip.MustParsePrefix("100::/64"), netip.MustParsePrefix("100:0:0:1::/64"),
+		netip.MustParsePrefix("2001::/23"),
 		netip.MustParsePrefix("2001:db8::/32"), netip.MustParsePrefix("2002::/16"), netip.MustParsePrefix("3fff::/20"),
-		netip.MustParsePrefix("fc00::/7"),
+		netip.MustParsePrefix("5f00::/16"), netip.MustParsePrefix("fc00::/7"),
 		netip.MustParsePrefix("fe80::/10"), netip.MustParsePrefix("ff00::/8"),
 	}
 	providerCapabilities = []string{"dns.records.create", "dns.records.delete", "dns.records.observe", "dns.records.replace"}
@@ -376,7 +377,7 @@ func validateOwnership(entries []CertificateOwnership) error {
 
 func validateAddress(raw string, ipv4 bool, environment Environment) (netip.Addr, error) {
 	address, err := netip.ParseAddr(raw)
-	if err != nil || address.String() != raw || address.Is4() != ipv4 {
+	if err != nil || address.String() != raw || address.Is4() != ipv4 || address.Is4In6() {
 		return netip.Addr{}, ErrInvalidInput
 	}
 	documentation := isDocumentation(address)
