@@ -80,7 +80,7 @@ func TestCompiledProviderConformance(t *testing.T) {
 		_ = command.Wait()
 		close(done)
 	}()
-	defer func() {
+	stop := func() {
 		select {
 		case <-done:
 			return
@@ -93,7 +93,8 @@ func TestCompiledProviderConformance(t *testing.T) {
 			_ = command.Process.Kill()
 			<-done
 		}
-	}()
+	}
+	defer stop()
 	deadline := time.Now().Add(3 * time.Second)
 	for {
 		if info, statErr := os.Lstat(socketPath); statErr == nil {
@@ -149,6 +150,10 @@ func TestCompiledProviderConformance(t *testing.T) {
 	if health.GetState() != controlv1.HealthState_HEALTH_STATE_READY || health.GetCode() != "extension.ready" {
 		t.Fatalf("health: %+v", health)
 	}
+	if err := connection.Close(); err != nil {
+		t.Fatal(err)
+	}
+	stop()
 	if bytes.Contains(stdout.Bytes(), serviceToken) || bytes.Contains(stdout.Bytes(), fakePAT) || bytes.Contains(stderr.Bytes(), serviceToken) || bytes.Contains(stderr.Bytes(), fakePAT) {
 		t.Fatal("provider output disclosed secret")
 	}

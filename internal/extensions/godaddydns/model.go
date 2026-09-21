@@ -58,7 +58,12 @@ type Result struct {
 	SessionSHA256         string
 	AdmissionSHA256       string
 	ReleaseReady          bool
+	seal                  string
 }
+
+// Verified reports whether this result is still the exact output of
+// VerifyAndAdmit. Mutating any exported evidence invalidates the private seal.
+func (result Result) Verified() bool { return result.seal != "" && result.seal == resultSeal(result) }
 
 type artifactPins struct {
 	Archive, Manifest, Executable, ConfigMetadata, License string

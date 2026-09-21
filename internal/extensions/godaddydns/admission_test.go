@@ -112,8 +112,14 @@ func TestVerifyAndAdmitCandidateAndPublished(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if candidate.ReleaseReady || candidate.ManifestSHA256 != ExpectedManifestSHA256 || candidate.AdmissionSHA256 == "" || digest(candidate.Executable) != pins.Executable {
+	if !candidate.Verified() || candidate.ReleaseReady || candidate.ManifestSHA256 != ExpectedManifestSHA256 || candidate.AdmissionSHA256 == "" || digest(candidate.Executable) != pins.Executable {
 		t.Fatalf("candidate result: %+v", candidate)
+	}
+	tampered := candidate
+	tampered.ProviderConfiguration = append([]byte(nil), tampered.ProviderConfiguration...)
+	tampered.ProviderConfiguration[0] ^= 1
+	if tampered.Verified() {
+		t.Fatal("mutated admission retained verification")
 	}
 	var binding runtimeBinding
 	if err := json.Unmarshal(candidate.RuntimeBinding, &binding); err != nil {
@@ -128,7 +134,7 @@ func TestVerifyAndAdmitCandidateAndPublished(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !published.ReleaseReady || published.AdmissionSHA256 == candidate.AdmissionSHA256 {
+	if !published.Verified() || !published.ReleaseReady || published.AdmissionSHA256 == candidate.AdmissionSHA256 {
 		t.Fatal("distribution state not bound")
 	}
 	again, err := verifyAndAdmit(bytes.NewReader(archive), request, pins)

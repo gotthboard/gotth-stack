@@ -86,7 +86,22 @@ func verifyAndAdmit(reader io.Reader, request Request, pins artifactPins) (Resul
 	if err != nil {
 		return Result{}, ErrInvalidAdmission
 	}
-	return Result{Executable: append([]byte(nil), members.Executable...), RuntimeBinding: bindingJSON, ProviderConfiguration: configurationJSON, ManifestSHA256: manifestDigest, GrantSHA256: session.GrantDigest, SessionSHA256: session.Fingerprint, AdmissionSHA256: digest(wireJSON), ReleaseReady: request.Distribution == DistributionPublished}, nil
+	result := Result{Executable: append([]byte(nil), members.Executable...), RuntimeBinding: bindingJSON, ProviderConfiguration: configurationJSON, ManifestSHA256: manifestDigest, GrantSHA256: session.GrantDigest, SessionSHA256: session.Fingerprint, AdmissionSHA256: digest(wireJSON), ReleaseReady: request.Distribution == DistributionPublished}
+	result.seal = resultSeal(result)
+	return result, nil
+}
+
+func resultSeal(result Result) string {
+	wire := struct {
+		Executable, RuntimeBinding, ProviderConfiguration string
+		Manifest, Grant, Session, Admission               string
+		ReleaseReady                                      bool
+	}{digest(result.Executable), digest(result.RuntimeBinding), digest(result.ProviderConfiguration), result.ManifestSHA256, result.GrantSHA256, result.SessionSHA256, result.AdmissionSHA256, result.ReleaseReady}
+	encoded, err := json.Marshal(wire)
+	if err != nil {
+		return ""
+	}
+	return digest(encoded)
 }
 
 func validRequest(r Request, publicationAvailable bool) bool {

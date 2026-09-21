@@ -13,4 +13,4 @@ GOTTH_EXTENSION_REQUIRE_CLEAN=1 "$scratch/provider/scripts/build-artifact.sh" 1.
 artifact="$scratch/artifact/gotth-extension-godaddy-dns-1.0.0-alpha.2-linux-amd64.tar.gz"
 test "$(sha256sum "$artifact" | cut -d' ' -f1)" = 88ce5fb3c2bd2dc1f66707a8657886055632a31e0a4e7e1cec8e459e0742435f
 cd "$root"
-GOTTH_GODADDY_ARTIFACT="$artifact" go test -count=1 -run '^TestCompiledProviderConformance$' ./internal/extensions/godaddydns
+GOTTH_GODADDY_ARTIFACT="$artifact" go test -count=1 -run '^(TestCompiledProviderConformance|TestComposeExactProviderArtifact)$' ./internal/extensions/godaddydns ./internal/composition/mailidentity
