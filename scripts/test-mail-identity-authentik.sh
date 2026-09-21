@@ -101,6 +101,7 @@ docker_cmd run -d --name "$worker_name" --network "$network_name" \
 	"$authentik_image" worker >/dev/null
 
 wait_for "$server_name" 'from authentik.flows.models import Flow; assert Flow.objects.filter(slug="default-provider-authorization-implicit-consent").exists(); from authentik.crypto.models import CertificateKeyPair; assert CertificateKeyPair.objects.filter(name="authentik Self-signed Certificate").exists()' 180
+wait_for "$server_name" 'from authentik.providers.scim.models import SCIMMapping; required = {"goauthentik.io/providers/scim/user", "goauthentik.io/providers/scim/group"}; assert required <= set(SCIMMapping.objects.values_list("managed", flat=True))' 180
 
 if ! docker_cmd exec "$server_name" ak shell -c '
 from pathlib import Path
