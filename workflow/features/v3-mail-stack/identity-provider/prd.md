@@ -65,13 +65,15 @@ satisfy this requirement.
 
 ## Current blockers
 
-Source inspection on 2026-09-20 established two blockers:
+Source inspection on 2026-09-20 established two blockers, both now satisfied by
+reviewed candidate evidence:
 
-1. GOTTH Mail reads `role_bindings`, but only tests write rows; production has
-   no audited create/revoke operator path.
-2. GoDaddy extension `1.0.0-alpha.1` admits A, AAAA, CAA, CNAME, MX, and TXT
-   mutation but explicitly rejects SRV mutation, while GOTTH Mail readiness
-   requires `_submission._tcp`.
+1. GOTTH Mail's role-binding operator is admitted at evidence head
+   `c3d40453b4010026263ea1749b82812a52d03596`.
+2. GoDaddy SRV mutation is admitted at evidence head
+   `8529e8d13dcd7634c6810b1b937fb652564283a4`; Stack consumes exact source
+   `c1f3525753da982a3ba84a5f443ae8e35dadebc8` and candidate
+   `1.0.0-alpha.2` for `_submission._tcp` composition.
 
-No implementation may hide either blocker or mark this child done before the
-corresponding artifacts are reviewed and pinned.
+Implementation remains responsible for revalidating and pinning both exact
+candidates; candidate status is not production publication.

@@ -39,8 +39,9 @@ path, token, PAT, remote URL query, or provider response.
 
 The cross-repository test requires explicit paths to an exact clean provider
 repository and a new artifact output directory. It verifies source commit
-`b313b413dc9ea7d495fa45b21b26c6e3dc94b064`, builds the deterministic candidate
-artifact, feeds it to the Stack admission package, stages the verified binary,
+`c1f3525753da982a3ba84a5f443ae8e35dadebc8`, builds deterministic candidate
+artifact `1.0.0-alpha.2` with bounded SRV mutation, feeds it to the Stack
+admission package, stages the verified binary,
 and performs control handshake/health only.
 
 No live credential or zone is read. The candidate is not marked release-ready

@@ -16,8 +16,7 @@ type Input struct {
     DKIMSelector, DKIMPublicKeyTXT string
     DMARCReportAddress, TLSRPTReportAddress string
     DNSInstanceID string
-    ProviderDistribution godaddydns.DistributionStatus
-    ProviderForgejoCommit, ProviderGitHubCommit string
+    ProviderAdmission godaddydns.Result
 }
 
 type Result struct {
@@ -37,6 +36,12 @@ func Compose(Input) (Result, error)
 There is no options map, arbitrary site, arbitrary record, arbitrary Caddy
 directive, environment-variable passthrough, apply method, or secret-value
 field.
+
+`godaddydns.Result` carries an unexported verification marker set only by
+`VerifyAndAdmit`. Composition rejects zero-value or caller-constructed results,
+parses and compares the admitted canonical provider configuration, and binds
+the admission, manifest, grant, and session digests. Production additionally
+requires the verified result's compiled `ReleaseReady` state.
 
 ## Validation
 
@@ -63,10 +68,12 @@ Mail variables are sorted by name and limited to the five documented
 `GOTTH_MAIL_AUTHENTIK_*`/`GOTTH_MAIL_SCIM_EXTERNAL_URL` keys. Values contain no
 secret bytes.
 
-The DNS request asks only for observe/create/replace/delete, the exact zone,
+Before composition, the caller asks provider admission only for
+observe/create/replace/delete, the exact zone,
 record types `A`, optional `AAAA`, `MX`, `SRV`, `TXT`, production or OTE as
-appropriate, and a fixed bounded timeout. Until a new provider artifact
-compiles SRV into its mutable set, this request is expected to fail admission.
+appropriate, and a fixed bounded timeout. Exact candidate `1.0.0-alpha.2`
+admits this request for disposable composition; production remains unavailable
+until retained cross-forge publication evidence changes the compiled pin.
 
 ## Verification
 

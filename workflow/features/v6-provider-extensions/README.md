@@ -7,10 +7,11 @@ extension compatibility boundary without broad host authority. Governing
 requirements are in `prd.md`, `architecture.md`, and
 `implementation-spec.md`.
 
-The exact provider source candidate is
-`b313b413dc9ea7d495fa45b21b26c6e3dc94b064`; its Forgejo evidence head is
-`ed2707a`. GitHub publication is absent, so candidate conformance may proceed
-but release admission must remain blocked.
+The exact provider source candidate is now
+`c1f3525753da982a3ba84a5f443ae8e35dadebc8`; its Forgejo evidence head is
+`8529e8d13dcd7634c6810b1b937fb652564283a4`. It supersedes the earlier
+observation-only SRV candidate. GitHub publication is absent, so candidate
+conformance may proceed but release admission must remain blocked.
 
 Stack implementation source is
 `e2f72a3a25299e7e48e131ac151c151b0f5ac856`. The production profile compiles

@@ -12,7 +12,7 @@ import (
 )
 
 func testRequest() Request {
-	return Request{Distribution: DistributionCandidate, ForgejoCommit: ExpectedSourceCommit, InstanceID: "11111111-1111-1111-1111-111111111111", Capabilities: []string{"dns.records.create", "dns.records.delete", "dns.records.observe", "dns.records.replace"}, Zones: []string{"example.com"}, RecordTypes: []string{"A", "AAAA", "CAA", "CNAME", "MX", "TXT"}, Environment: "ote", TimeoutSeconds: 15}
+	return Request{Distribution: DistributionCandidate, ForgejoCommit: ExpectedSourceCommit, InstanceID: "11111111-1111-1111-1111-111111111111", Capabilities: []string{"dns.records.create", "dns.records.delete", "dns.records.observe", "dns.records.replace"}, Zones: []string{"example.com"}, RecordTypes: []string{"A", "AAAA", "CAA", "CNAME", "MX", "SRV", "TXT"}, Environment: "ote", TimeoutSeconds: 15}
 }
 
 func expectedManifest() extensioncore.Manifest {

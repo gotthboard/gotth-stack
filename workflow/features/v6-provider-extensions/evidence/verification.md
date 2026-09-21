@@ -2,11 +2,14 @@
 
 ## Candidate
 
-Stack implementation and tests are complete through
-`e2f72a3a25299e7e48e131ac151c151b0f5ac856`. The exact independent provider
-source is `b313b413dc9ea7d495fa45b21b26c6e3dc94b064`; its retained Forgejo evidence
-head is `ed2707a`. The admitted archive SHA-256 is
-`03b532d557a9b2894e71ccb224f2d5cd18fcf07f15b94575e1ac48212c9129bd`.
+The original Stack admission was complete through
+`e2f72a3a25299e7e48e131ac151c151b0f5ac856`. Identity composition refreshes
+that closed pin set to exact provider source
+`c1f3525753da982a3ba84a5f443ae8e35dadebc8`, retained Forgejo evidence head
+`8529e8d13dcd7634c6810b1b937fb652564283a4`, candidate version
+`1.0.0-alpha.2`, and archive SHA-256
+`88ce5fb3c2bd2dc1f66707a8657886055632a31e0a4e7e1cec8e459e0742435f`.
+The refreshed metadata and Stack type allowlist include bounded SRV mutation.
 
 GitHub repository, tag, and artifact evidence do not exist. The Stack
 production profile therefore compiles publication availability as false.

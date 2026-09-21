@@ -15,21 +15,23 @@ behavior into Stack.
 ## Data flow
 
 ```text
-typed deployment input
+exact provider archive + closed provider request
+  `-- godaddydns.VerifyAndAdmit
+                 |
+typed deployment input + opaque verified admission
   |-- validate host/zone/IP/upstream/secret references
   |-- gotth-authentik.RenderDeploymentBlueprint
   |-- render fixed Caddyfile and MTA-STS policy
   |-- derive GOTTH Mail identity variables
   |-- derive certificate/listener ownership
   `-- derive canonical DNS records and exact provider grant
-            |
-            `-- separately VerifyAndAdmit(exact provider archive)
+            `-- bind exact admission, grant, session, and configuration digests
 ```
 
 Every rendered byte slice and canonical typed collection has a SHA-256 digest.
 The aggregate composition digest covers a canonical JSON wire containing only
 the environment, public identifiers, component digests, ownership table,
-records, provider source/artifact pins, grant digest, and release-readiness
+records, provider source/artifact pins, admission/grant/session digests, and release-readiness
 state. It contains no credential values or host filesystem paths except the
 two fixed container-visible secret references.
 
@@ -54,13 +56,16 @@ preconditions. This feature does not invent a second DNS client.
 
 Required mutable record types are `A`, optional `AAAA`, `MX`, `SRV`, and
 `TXT`. CAA is outside the minimum record set unless an explicit certificate
-policy is added later. The provider grant therefore cannot be admitted from
-the current artifact, whose compiled mutable set excludes SRV.
+policy is added later. Candidate `1.0.0-alpha.2` compiles that exact set and is
+admissible for disposable composition. Its unavailable public distribution
+proof still prevents production readiness.
 
 ## Failure behavior
 
 Validation returns fixed sentinel classes without echoing attacker-controlled
-input. No partial output is returned. Candidate provider admission produces an
-honest `ReleaseReady=false`; production composition rejects it. Missing role
+input. No partial output is returned. Composition accepts only an opaque
+verified result returned by `godaddydns.VerifyAndAdmit`; callers cannot
+construct publication authority. Candidate admission produces an honest
+`ReleaseReady=false`; production composition rejects it. Missing role
 authority, PTR authority, public values, or publication proof remains a named
 blocker rather than a manual step.

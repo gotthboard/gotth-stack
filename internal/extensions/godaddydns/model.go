@@ -3,13 +3,13 @@ package godaddydns
 import "errors"
 
 const (
-	ExpectedSourceCommit               = "b313b413dc9ea7d495fa45b21b26c6e3dc94b064"
+	ExpectedSourceCommit               = "c1f3525753da982a3ba84a5f443ae8e35dadebc8"
 	ExpectedFoundationCommit           = "3822dd722bc8606b8843d0a68c7c3e9f598d9ccc"
-	ExpectedVersion                    = "1.0.0-alpha.1"
-	ExpectedArchiveSHA256              = "03b532d557a9b2894e71ccb224f2d5cd18fcf07f15b94575e1ac48212c9129bd"
-	ExpectedManifestSHA256             = "c765d2681e1104c597b64e49b0dc7fb226fcc9006f5958ccbbe4d5f81dec5532"
-	ExpectedExecutableSHA256           = "d78e4a1f8175de68809210c270c17dab83d87b392c16e6b7e0618f45911e49f5"
-	ExpectedConfigMetadataSHA256       = "ce53aa4df550439a30e1cd8263670e3d5f6ca74244593fbe36190f962f512eec"
+	ExpectedVersion                    = "1.0.0-alpha.2"
+	ExpectedArchiveSHA256              = "88ce5fb3c2bd2dc1f66707a8657886055632a31e0a4e7e1cec8e459e0742435f"
+	ExpectedManifestSHA256             = "c0cf3c5921a692c54be1db4d734d7cacd3264f3bb6eb6778940e291e107b221f"
+	ExpectedExecutableSHA256           = "5546b9f02286757ae7af70094bae1633e89d07355849a9da87885c2be1bb1c42"
+	ExpectedConfigMetadataSHA256       = "fb0ed0362b5380ddaf5efd639a93a5880a59e97746ab8ee5afd8ba3d5cefe6e7"
 	ExpectedLicenseSHA256              = "5d3e572b01d8ed617e25ece3838c73f277e3c9da35ec0b680d1871e9d6cf62f8"
 	ExpectedExtensionID                = "gotth.dns.provider.godaddy"
 	ExpectedInterface                  = "gotth.dns.records"
@@ -27,7 +27,7 @@ var (
 	ErrInvalidArtifact  = errors.New("GoDaddy DNS extension artifact is invalid")
 
 	expectedCapabilities = []string{"dns.records.create", "dns.records.delete", "dns.records.observe", "dns.records.replace"}
-	expectedRecordTypes  = []string{"A", "AAAA", "CAA", "CNAME", "MX", "TXT"}
+	expectedRecordTypes  = []string{"A", "AAAA", "CAA", "CNAME", "MX", "SRV", "TXT"}
 )
 
 type DistributionStatus string

@@ -10,8 +10,8 @@ Contracts:
 - [architecture](architecture.md)
 - [implementation specification](implementation-spec.md)
 
-Implementation is blocked until the GoDaddy extension artifact admits required
-SRV mutation. GOTTH Mail's reviewed durable role-binding operator is satisfied
-and mirrored at `c3d40453b4010026263ea1749b82812a52d03596`; the Authentik
-file-backed OIDC/SCIM renderer is satisfied and mirrored at
-`7f7f86e21fbb7ca85e3a0ba78e381509326d6d03`.
+All three source prerequisites are satisfied: GOTTH Mail's durable role-binding
+operator at `c3d40453b4010026263ea1749b82812a52d03596`, Authentik's file-backed
+OIDC/SCIM renderer at `7f7f86e21fbb7ca85e3a0ba78e381509326d6d03`, and GoDaddy SRV mutation at
+`8529e8d13dcd7634c6810b1b937fb652564283a4`. Candidate status does not imply
+public provider publication or live deployment.

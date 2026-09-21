@@ -1,5 +1,18 @@
 # Changelog
 
+## 2026-09-20 20:25 CDT — Refresh provider admission for bounded SRV
+
+- Replaced the closed GoDaddy provider pin set with source
+  `c1f3525753da982a3ba84a5f443ae8e35dadebc8`, candidate
+  `1.0.0-alpha.2`, exact archive/member digests, and the seven-type metadata
+  allowlist containing SRV.
+- Updated cross-repository conformance to rebuild that exact clean source and
+  verify the exact archive before compiled-process admission.
+- Satisfied the final identity-composition source prerequisite at provider
+  evidence head `8529e8d13dcd7634c6810b1b937fb652564283a4`. Candidate
+  distribution remains compiled unavailable; no credential, DNS record, live
+  deployment, tag, or release changed.
+
 ## 2026-09-20 20:02 CDT — Satisfy the Mail role-binding prerequisite
 
 - Bound identity composition to GOTTH Mail evidence head
