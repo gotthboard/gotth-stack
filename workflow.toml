@@ -629,8 +629,10 @@ source_commit = "7f7f86e21fbb7ca85e3a0ba78e381509326d6d03"
 [[feature."v3.mail-stack.identity-provider".dependency]]
 id = "gotth-mail.role-binding-operator"
 type = "prerequisite"
-state = "unresolved"
-evidence = ""
+state = "satisfied"
+evidence = "gotth-mail workflow/features/release.1-0/role-binding-operator/evidence/2026-09-20-role-binding-operator.md"
+satisfied_at = "2026-09-21T01:02:00Z"
+source_commit = "c3d40453b4010026263ea1749b82812a52d03596"
 
 [[feature."v3.mail-stack.identity-provider".dependency]]
 id = "gotth-extension-godaddy-dns.srv-mutation"

@@ -1,5 +1,15 @@
 # Changelog
 
+## 2026-09-20 20:02 CDT — Satisfy the Mail role-binding prerequisite
+
+- Bound identity composition to GOTTH Mail evidence head
+  `c3d40453b4010026263ea1749b82812a52d03596`, where the exact Authentik
+  identity role-binding operator is implemented, verified, reviewed, and
+  mirrored across Forgejo and GitHub.
+- The only remaining implementation prerequisite is SRV mutation in the
+  independently admitted GoDaddy DNS extension. No Stack implementation,
+  credential, DNS record, live deployment, tag, or release changed.
+
 ## 2026-09-20 — Decompose and specify GOTTH Mail deployment
 
 - Activated the Mail stack workstream and froze the missing production
