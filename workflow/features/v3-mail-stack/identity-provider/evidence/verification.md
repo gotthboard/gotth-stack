@@ -67,8 +67,18 @@ git diff --check
 PASS
 ```
 
-The full repository gate and clean-clone repetition are recorded only after
-this evidence commit is included; they must pass before branch publication.
+```text
+PATH=<checksum-verified-node-26.7.0>:$PATH make verify
+PASS on evidence head 98c9524bd3928b0c825490fa93d1db089850e001
+
+fresh local clone at the same evidence head:
+  make verify
+  make provider-conformance
+  make mail-identity-caddy-conformance
+PASS; tracked tree clean
+```
+
+The complete repository gate used Go 1.26.6, Node 26.7.0, and npm 12.0.2.
 
 ## Review
 
