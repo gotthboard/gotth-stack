@@ -127,6 +127,7 @@ func TestComposeRejectsUnverifiedAdmissionAndInvalidInputs(t *testing.T) {
 		func(value *Input) { value.DKIMPublicKeyTXT = "v=DKIM1; k=rsa; p=A=A" },
 		func(value *Input) { value.DKIMPublicKeyTXT = "v=DKIM1; k=rsa; p=" + strings.Repeat("A", 496) },
 		func(value *Input) { value.DMARCReportAddress = "mailto:dmarc@other.test" },
+		func(value *Input) { value.DMARCReportAddress = "mailto:" + strings.Repeat("a", 490) + "@example.test" },
 	}
 	for index, mutate := range invalid {
 		candidate := validInput()
@@ -153,9 +154,14 @@ func TestProductionAddressAndReservedZoneValidation(t *testing.T) {
 	if _, err := validateAddress("3fff::1", false, EnvironmentDisposable); err != nil {
 		t.Fatalf("RFC 9637 documentation address rejected in disposable mode: %v", err)
 	}
-	for _, zone := range []string{"example.com", "mail.example.com", "example.net", "example.org", "mail.test", "mail.invalid", "mail.example", "mail.localhost", "mail.local"} {
-		if !reservedProductionZone(zone) {
+	for _, zone := range []string{"example.com", "mail.example.com", "example.net", "example.org", "mail.test", "mail.invalid", "mail.example", "mail.localhost", "mail.local", "home.arpa", "mail.home.arpa", "mail.onion", "mail.alt", "mail.internal"} {
+		if publicProductionZone(zone) {
 			t.Errorf("reserved production zone %q accepted", zone)
+		}
+	}
+	for _, zone := range []string{"gotthmail.net", "mail.gotthmail.net", "service.example.co.uk"} {
+		if !publicProductionZone(zone) {
+			t.Errorf("public production zone %q rejected", zone)
 		}
 	}
 }
@@ -166,6 +172,14 @@ func TestClosedHelpersRejectAmbiguity(t *testing.T) {
 	}
 	if !canonicalRecords(nil) {
 		t.Fatal("empty canonical record set rejected")
+	}
+	for _, record := range []DNSRecord{
+		{Name: "@", Type: "TXT", Data: "", TTL: 600},
+		{Name: "@", Type: "TXT", Data: strings.Repeat("a", maxProviderRecordDataSize+1), TTL: 600},
+	} {
+		if canonicalRecords([]DNSRecord{record}) {
+			t.Errorf("provider-invalid record data accepted: length=%d", len(record.Data))
+		}
 	}
 	for index, entries := range [][]CertificateOwnership{
 		{{Hostname: "mail.example.test", Owner: "first"}, {Hostname: "mail.example.test", Owner: "second"}},

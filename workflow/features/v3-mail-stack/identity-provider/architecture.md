@@ -64,6 +64,15 @@ policy is added later. Candidate `1.0.0-alpha.2` compiles that exact set and is
 admissible for disposable composition. Its unavailable public distribution
 proof still prevents production readiness.
 
+Every rendered record is checked against the admitted provider's 512-byte
+record-data limit before the result is sealed. Production zones must have a
+registrable domain beneath an ICANN-managed suffix in the pinned
+`golang.org/x/net/publicsuffix` snapshot; unmanaged and special-use suffixes,
+private suffixes, bare public suffixes, the infrastructure `.arpa` suffix, and
+every non-ARPA domain in the IANA Special-Use Domain Names registry snapshot
+dated 2026-05-22 are rejected. Rejecting all `.arpa` zones also covers every
+ARPA entry in that registry.
+
 ## Failure behavior
 
 Validation returns fixed sentinel classes without echoing attacker-controlled

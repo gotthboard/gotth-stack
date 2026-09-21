@@ -19,6 +19,7 @@ import (
 
 	authentik "github.com/gotthboard/gotth-authentik/pkg/authentik"
 	"github.com/gotthboard/gotth-stack/internal/extensions/godaddydns"
+	"golang.org/x/net/publicsuffix"
 )
 
 type Environment string
@@ -134,11 +135,14 @@ var (
 		netip.MustParsePrefix("fe80::/10"), netip.MustParsePrefix("ff00::/8"),
 	}
 	providerCapabilities = []string{"dns.records.create", "dns.records.delete", "dns.records.observe", "dns.records.replace"}
+	specialUseDomains    = []string{"alt", "example", "example.com", "example.net", "example.org", "invalid", "local", "localhost", "onion", "test"}
 )
 
 const (
-	oidcClientSecretFile = "/run/secrets/oidc-client-secret"
-	scimTokenFile        = "/run/secrets/scim-client-token"
+	oidcClientSecretFile      = "/run/secrets/oidc-client-secret"
+	scimTokenFile             = "/run/secrets/scim-client-token"
+	maxProviderRecordDataSize = 512
+	maxMailboxSize            = 254
 )
 
 func Compose(input Input) (Result, error) {
@@ -165,7 +169,7 @@ func Compose(input Input) (Result, error) {
 		}
 	}
 	if (input.Environment == EnvironmentDisposable && !strings.HasSuffix(input.Zone, ".test")) ||
-		(input.Environment == EnvironmentProduction && reservedProductionZone(input.Zone)) {
+		(input.Environment == EnvironmentProduction && !publicProductionZone(input.Zone)) {
 		return Result{}, ErrInvalidInput
 	}
 	if !validSelector(input.DKIMSelector) || !validDKIM(input.DKIMPublicKeyTXT) || !validReportAddress(input.DMARCReportAddress, input.Zone) || !validReportAddress(input.TLSRPTReportAddress, input.Zone) {
@@ -333,6 +337,9 @@ func buildRecords(input Input, mtaHostname, policy string, ipv4, ipv6 netip.Addr
 
 func canonicalRecords(records []DNSRecord) bool {
 	for index, record := range records {
+		if len(record.Data) == 0 || len(record.Data) > maxProviderRecordDataSize {
+			return false
+		}
 		if index > 0 && recordKey(records[index-1]) == recordKey(record) {
 			return false
 		}
@@ -443,13 +450,22 @@ func validLabel(value string) bool {
 	return true
 }
 
-func reservedProductionZone(zone string) bool {
-	if zone == "example.com" || strings.HasSuffix(zone, ".example.com") ||
-		zone == "example.net" || strings.HasSuffix(zone, ".example.net") ||
-		zone == "example.org" || strings.HasSuffix(zone, ".example.org") {
-		return true
+func publicProductionZone(zone string) bool {
+	suffix, icann := publicsuffix.PublicSuffix(zone)
+	if !icann || suffix == zone || zone == "arpa" || strings.HasSuffix(zone, ".arpa") || hasSpecialUseSuffix(zone) {
+		return false
 	}
-	return strings.HasSuffix(zone, ".test") || strings.HasSuffix(zone, ".example") || strings.HasSuffix(zone, ".invalid") || strings.HasSuffix(zone, ".localhost") || strings.HasSuffix(zone, ".local")
+	registrable, err := publicsuffix.EffectiveTLDPlusOne(zone)
+	return err == nil && registrable != ""
+}
+
+func hasSpecialUseSuffix(zone string) bool {
+	for _, reserved := range specialUseDomains {
+		if zone == reserved || strings.HasSuffix(zone, "."+reserved) {
+			return true
+		}
+	}
+	return false
 }
 
 func validSelector(value string) bool { return validLabel(value) }
@@ -474,6 +490,9 @@ func validReportAddress(value, zone string) bool {
 		return false
 	}
 	address := strings.TrimPrefix(value, "mailto:")
+	if len(address) == 0 || len(address) > maxMailboxSize {
+		return false
+	}
 	parsed, err := mail.ParseAddress(address)
 	parts := strings.Split(address, "@")
 	return err == nil && parsed.Address == address && len(parts) == 2 && parts[0] != "" && parts[1] == zone

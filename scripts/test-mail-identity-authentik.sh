@@ -101,6 +101,7 @@ docker_cmd run -d --name "$worker_name" --network "$network_name" \
 	"$authentik_image" worker >/dev/null
 
 wait_for "$server_name" 'from authentik.flows.models import Flow; assert Flow.objects.filter(slug="default-provider-authorization-implicit-consent").exists(); from authentik.crypto.models import CertificateKeyPair; assert CertificateKeyPair.objects.filter(name="authentik Self-signed Certificate").exists()' 180
+wait_for "$server_name" 'from authentik.providers.oauth2.models import ScopeMapping; required = {"goauthentik.io/providers/oauth2/scope-openid", "goauthentik.io/providers/oauth2/scope-profile", "goauthentik.io/providers/oauth2/scope-email"}; assert required <= set(ScopeMapping.objects.values_list("managed", flat=True))' 180
 wait_for "$server_name" 'from authentik.providers.scim.models import SCIMMapping; required = {"goauthentik.io/providers/scim/user", "goauthentik.io/providers/scim/group"}; assert required <= set(SCIMMapping.objects.values_list("managed", flat=True))' 180
 
 if ! docker_cmd exec "$server_name" ak shell -c '
@@ -113,11 +114,33 @@ from authentik.providers.oauth2.models import OAuth2Provider
 from authentik.providers.scim.models import SCIMProvider
 
 raw = Path("/test/blueprint.yaml").read_text()
-missing_raw = raw.replace(
-    "/run/secrets/oidc-client-secret",
-    "/run/secrets/missing-oidc-client-secret",
-)
-assert missing_raw != raw
+assert "client_secret: !File \"/run/secrets/oidc-client-secret\"" in raw
+missing_raw = """
+version: 1
+metadata:
+  name: "GOTTH Mail missing-secret proof"
+entries:
+  - identifiers: {name: "gotth-mail-oidc-missing-proof"}
+    model: authentik_providers_oauth2.oauth2provider
+    attrs:
+      authorization_flow: !Find [authentik_flows.flow, [slug, default-provider-authorization-implicit-consent]]
+      invalidation_flow: !Find [authentik_flows.flow, [slug, default-provider-invalidation-flow]]
+      client_type: confidential
+      client_id: "gotth-mail-missing-proof"
+      client_secret: !File "/run/secrets/missing-oidc-client-secret"
+      redirect_uris:
+        - matching_mode: strict
+          url: "https://mail.example.test/api/v1/oidc/callback"
+          redirect_uri_type: authorization
+      grant_types: [authorization_code, refresh_token]
+      include_claims_in_id_token: true
+      issuer_mode: per_provider
+      property_mappings:
+        - !Find [authentik_providers_oauth2.scopemapping, [managed, goauthentik.io/providers/oauth2/scope-openid]]
+        - !Find [authentik_providers_oauth2.scopemapping, [managed, goauthentik.io/providers/oauth2/scope-profile]]
+        - !Find [authentik_providers_oauth2.scopemapping, [managed, goauthentik.io/providers/oauth2/scope-email]]
+      signing_key: !Find [authentik_crypto.certificatekeypair, [name, "authentik Self-signed Certificate"]]
+"""
 missing = Importer.from_string(missing_raw)
 try:
     missing.validate(raise_validation_errors=True)
@@ -125,7 +148,7 @@ except EntryInvalidError as exc:
     assert "client_secret" in str(exc)
 else:
     raise AssertionError("missing OIDC secret file passed importer validation")
-assert not OAuth2Provider.objects.filter(name="gotth-mail-oidc").exists()
+assert not OAuth2Provider.objects.filter(name="gotth-mail-oidc-missing-proof").exists()
 
 first = Importer.from_string(raw)
 valid, logs = first.validate(raise_validation_errors=True)

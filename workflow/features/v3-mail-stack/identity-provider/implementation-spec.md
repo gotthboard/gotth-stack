@@ -49,7 +49,11 @@ Authentik-blueprint-application blockers.
 
 Canonical lowercase ASCII/punycode hostnames must lie inside the exact zone
 and be mutually distinct. Production requires public hostnames and at least one
-canonical public IP; disposable mode admits `.test` plus documentation IPs.
+canonical public IP. Its zone must have a registrable domain beneath an
+ICANN-managed suffix in the pinned Public Suffix List snapshot and must not be
+under `.arpa` or any non-ARPA name in the IANA Special-Use Domain Names
+registry snapshot dated 2026-05-22. Disposable mode admits `.test` plus
+documentation IPs.
 Upstreams are canonical `host:port` values whose hosts are literal loopback or
 private IP addresses. Secret references are not inputs. OIDC is fixed to the
 mail runtime adapter target `/run/secrets/oidc-client-secret`; the distinct
@@ -57,8 +61,9 @@ one-shot SCIM import reference is `/run/secrets/scim-client-token`.
 
 DKIM is a canonical base64 exact TXT value bounded to the provider's 512-byte
 record-data limit. Report destinations are exact `mailto:`
-addresses inside the zone. TTL is fixed at 600 seconds. Duplicate logical
-records reject before rendering.
+addresses inside the zone with mailboxes bounded to 254 bytes. Every generated
+record's data is independently bounded to the provider's 512-byte limit. TTL
+is fixed at 600 seconds. Duplicate logical records reject before rendering.
 
 ## Fixed desired state
 
