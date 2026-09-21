@@ -128,6 +128,14 @@ func TestComposeRejectsUnverifiedAdmissionAndInvalidInputs(t *testing.T) {
 		func(value *Input) { value.DKIMPublicKeyTXT = "v=DKIM1; k=rsa; p=" + strings.Repeat("A", 496) },
 		func(value *Input) { value.DMARCReportAddress = "mailto:dmarc@other.test" },
 		func(value *Input) { value.DMARCReportAddress = "mailto:" + strings.Repeat("a", 490) + "@example.test" },
+		func(value *Input) {
+			value.Zone = strings.Repeat("a", 63) + "." + strings.Repeat("b", 63) + "." + strings.Repeat("c", 63) + "." + strings.Repeat("d", 50) + ".test"
+			value.WebHostname = "w." + value.Zone
+			value.IdentityHostname = "i." + value.Zone
+			value.MailHostname = "x." + value.Zone
+			value.DMARCReportAddress = "mailto:a@" + value.Zone
+			value.TLSRPTReportAddress = "mailto:b@" + value.Zone
+		},
 	}
 	for index, mutate := range invalid {
 		candidate := validInput()

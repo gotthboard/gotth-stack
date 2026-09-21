@@ -153,6 +153,9 @@ func Compose(input Input) (Result, error) {
 		return Result{}, ErrInvalidInput
 	}
 	mtaHostname := "mta-sts." + input.Zone
+	if !validHostname(mtaHostname, input.Zone) {
+		return Result{}, ErrInvalidInput
+	}
 	hosts := []string{input.WebHostname, input.IdentityHostname, input.MailHostname, mtaHostname}
 	if !uniqueStrings(hosts) || !validUpstream(input.ProductUpstream) || !validUpstream(input.AuthentikUpstream) || input.ProductUpstream == input.AuthentikUpstream {
 		return Result{}, ErrInvalidInput
