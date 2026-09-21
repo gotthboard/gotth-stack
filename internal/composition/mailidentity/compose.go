@@ -377,7 +377,7 @@ func validateOwnership(entries []CertificateOwnership) error {
 
 func validateAddress(raw string, ipv4 bool, environment Environment) (netip.Addr, error) {
 	address, err := netip.ParseAddr(raw)
-	if err != nil || address.String() != raw || address.Is4() != ipv4 || address.Is4In6() {
+	if err != nil || address.String() != raw || address.Is4() != ipv4 || address.Is4In6() || address.Zone() != "" {
 		return netip.Addr{}, ErrInvalidInput
 	}
 	documentation := isDocumentation(address)

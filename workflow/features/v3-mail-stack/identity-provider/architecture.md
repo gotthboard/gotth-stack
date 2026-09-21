@@ -76,7 +76,8 @@ ARPA entry in that registry.
 Production addresses use a closed IANA special-purpose registry snapshot
 verified 2026-09-20. Non-globally-reachable ranges and IPv4-mapped IPv6
 addresses are rejected; the latter cannot evade IPv4 policy by being supplied
-through the optional IPv6 field.
+through the optional IPv6 field. Scoped IPv6 literals are also rejected
+because interface zone identifiers are not DNS AAAA record data.
 
 ## Failure behavior
 
