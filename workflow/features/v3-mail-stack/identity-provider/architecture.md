@@ -1,0 +1,66 @@
+# Architecture: one typed composition boundary
+
+## Mechanism
+
+`internal/composition/mailidentity` is a pure package. It validates one closed
+input and renders one immutable result. It performs no filesystem, DNS, HTTP,
+Docker, database, or tenant mutation. The caller separately passes each output
+to an admitted adapter or provider operation under journal authority.
+
+The package imports the exact `gotth-authentik` pseudo-version corresponding
+to mirrored commit `7f7f86e21fbb7ca85e3a0ba78e381509326d6d03`.
+It does not copy Authentik model names, mapping identifiers, or `!File`
+behavior into Stack.
+
+## Data flow
+
+```text
+typed deployment input
+  |-- validate host/zone/IP/upstream/secret references
+  |-- gotth-authentik.RenderDeploymentBlueprint
+  |-- render fixed Caddyfile and MTA-STS policy
+  |-- derive GOTTH Mail identity variables
+  |-- derive certificate/listener ownership
+  `-- derive canonical DNS records and exact provider grant
+            |
+            `-- separately VerifyAndAdmit(exact provider archive)
+```
+
+Every rendered byte slice and canonical typed collection has a SHA-256 digest.
+The aggregate composition digest covers a canonical JSON wire containing only
+the environment, public identifiers, component digests, ownership table,
+records, provider source/artifact pins, grant digest, and release-readiness
+state. It contains no credential values or host filesystem paths except the
+two fixed container-visible secret references.
+
+## Caddy and certificate authority
+
+Caddy binds only 80/443. Three distinct HTTPS site labels exist: web,
+identity, and `mta-sts.<zone>`. GOTTH Mail and Authentik upstreams are fixed
+private endpoints. The MTA-STS site returns the computed policy only at
+`/.well-known/mta-sts.txt` and 404 elsewhere.
+
+Mail front owns 25/465/587/143/993 and the certificate for the distinct mail
+hostname. Caddy owns certificates for the other three hostnames. The result is
+rejected if any hostname or listener overlaps; sharing a hostname across two
+certificate owners is not treated as harmless just because ports differ.
+
+## DNS boundary
+
+Records are desired state, not imperative mutations. The DNS extension must
+first observe the admitted zone; later journaled reconciliation selects exact
+create/replace/delete operations using the provider's snapshot and record
+preconditions. This feature does not invent a second DNS client.
+
+Required mutable record types are `A`, optional `AAAA`, `MX`, `SRV`, and
+`TXT`. CAA is outside the minimum record set unless an explicit certificate
+policy is added later. The provider grant therefore cannot be admitted from
+the current artifact, whose compiled mutable set excludes SRV.
+
+## Failure behavior
+
+Validation returns fixed sentinel classes without echoing attacker-controlled
+input. No partial output is returned. Candidate provider admission produces an
+honest `ReleaseReady=false`; production composition rejects it. Missing role
+authority, PTR authority, public values, or publication proof remains a named
+blocker rather than a manual step.

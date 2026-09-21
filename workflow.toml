@@ -618,6 +618,26 @@ evidence = "workflow/features/v6-provider-extensions/evidence/verification.md"
 satisfied_at = "2026-09-20T23:53:21Z"
 source_commit = "e2f72a3a25299e7e48e131ac151c151b0f5ac856"
 
+[[feature."v3.mail-stack.identity-provider".dependency]]
+id = "gotth-authentik.mail-backchannel"
+type = "prerequisite"
+state = "satisfied"
+evidence = "gotth-authentik workflow/features/mail-backchannel/evidence/verification.md"
+satisfied_at = "2026-09-21T00:26:00Z"
+source_commit = "7f7f86e21fbb7ca85e3a0ba78e381509326d6d03"
+
+[[feature."v3.mail-stack.identity-provider".dependency]]
+id = "gotth-mail.role-binding-operator"
+type = "prerequisite"
+state = "unresolved"
+evidence = ""
+
+[[feature."v3.mail-stack.identity-provider".dependency]]
+id = "gotth-extension-godaddy-dns.srv-mutation"
+type = "prerequisite"
+state = "unresolved"
+evidence = ""
+
 [feature."v3.mail-stack.acceptance"]
 id = "v3.mail-stack.acceptance"
 slug = "acceptance"
