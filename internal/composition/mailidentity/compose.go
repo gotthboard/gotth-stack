@@ -499,7 +499,19 @@ func validReportAddress(value, zone string) bool {
 	}
 	parsed, err := mail.ParseAddress(address)
 	parts := strings.Split(address, "@")
-	return err == nil && parsed.Address == address && len(parts) == 2 && parts[0] != "" && parts[1] == zone
+	return err == nil && parsed.Address == address && len(parts) == 2 && validReportLocalPart(parts[0]) && parts[1] == zone
+}
+
+func validReportLocalPart(value string) bool {
+	if value == "" || value[0] == '.' || value[len(value)-1] == '.' || strings.Contains(value, "..") {
+		return false
+	}
+	for _, character := range []byte(value) {
+		if !(character >= 'a' && character <= 'z' || character >= '0' && character <= '9' || strings.ContainsRune("!$'*+-._~", rune(character))) {
+			return false
+		}
+	}
+	return true
 }
 
 func uniqueStrings(values []string) bool {

@@ -202,6 +202,18 @@ func TestClosedHelpersRejectAmbiguity(t *testing.T) {
 			t.Errorf("invalid zone %q accepted", value)
 		}
 	}
+	for _, value := range []string{
+		"mailto:.a@example.test", "mailto:a..b@example.test", "mailto:a/@example.test",
+		"mailto:a?b@example.test", "mailto:a#b@example.test", "mailto:a%b@example.test",
+		"mailto:a&b@example.test", "mailto:a=b@example.test", "mailto:é@example.test",
+	} {
+		if validReportAddress(value, "example.test") {
+			t.Errorf("noncanonical report URI %q accepted", value)
+		}
+	}
+	if !validReportAddress("mailto:a+b@example.test", "example.test") {
+		t.Fatal("canonical report URI rejected")
+	}
 }
 
 func TestStrictJSONCanonicalBoundary(t *testing.T) {
