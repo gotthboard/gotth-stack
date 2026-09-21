@@ -9,6 +9,8 @@ Contracts:
 - [product requirements](prd.md)
 - [architecture](architecture.md)
 - [implementation specification](implementation-spec.md)
+- [implementation verification](evidence/verification.md)
+- [judge-loop admission](review/judge-loop.md)
 
 All three source prerequisites are satisfied: GOTTH Mail's durable role-binding
 operator at `c3d40453b4010026263ea1749b82812a52d03596`, Authentik's file-backed
@@ -20,3 +22,9 @@ The local composition remains intentionally non-production-ready. It names
 provider publication, PTR authority, and the missing admitted Authentik
 blueprint-application mechanism instead of converting them into operator
 folklore or caller-supplied booleans.
+
+The local composition implementation is admitted through commit
+`79a1547d812cb3739dd24b0d6bdff262c92b9612`. This child remains in progress:
+browser OIDC, the complete SCIM lifecycle, durable role grant/revoke, session
+revocation, and Authentik-outage independence require the disposable product
+topology and are not manufactured by rendering tests.
