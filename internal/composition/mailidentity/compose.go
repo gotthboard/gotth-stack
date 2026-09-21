@@ -243,7 +243,7 @@ func composeVerified(input Input, mtaHostname string, ipv4, ipv6 netip.Addr, con
 		return Result{}, ErrInvalidInput
 	}
 	records := buildRecords(input, mtaHostname, policy, ipv4, ipv6)
-	if !canonicalRecords(records) {
+	if !canonicalRecords(records, input.Zone) {
 		return Result{}, ErrInvalidInput
 	}
 
@@ -340,9 +340,10 @@ func buildRecords(input Input, mtaHostname, policy string, ipv4, ipv6 netip.Addr
 	return records
 }
 
-func canonicalRecords(records []DNSRecord) bool {
+func canonicalRecords(records []DNSRecord, zone string) bool {
 	for index, record := range records {
-		if len(record.Data) == 0 || len(record.Data) > maxProviderRecordDataSize {
+		if len(record.Data) == 0 || len(record.Data) > maxProviderRecordDataSize ||
+			record.Name != "@" && len(record.Name)+1+len(zone) > 253 {
 			return false
 		}
 		if index > 0 && recordKey(records[index-1]) == recordKey(record) {

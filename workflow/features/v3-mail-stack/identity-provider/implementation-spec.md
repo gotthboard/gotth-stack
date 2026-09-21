@@ -69,7 +69,8 @@ bounded to 64 bytes. V1 accepts only lowercase ASCII dot-atom local parts whose
 characters are valid unescaped in both RFC 5322 and RFC 6068; percent-encoded,
 quoted, header-bearing, and internationalized forms reject. Every generated
 record's data is independently bounded to the provider's 512-byte limit. TTL
-is fixed at 600 seconds.
+is fixed at 600 seconds. Every relative owner is bounded again after joining
+it to the admitted zone; the resulting DNS name cannot exceed 253 bytes.
 Duplicate logical records reject before rendering.
 
 ## Fixed desired state

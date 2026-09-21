@@ -175,19 +175,23 @@ func TestProductionAddressAndReservedZoneValidation(t *testing.T) {
 }
 
 func TestClosedHelpersRejectAmbiguity(t *testing.T) {
-	if canonicalRecords([]DNSRecord{{Name: "@", Type: "A", Data: "192.0.2.1", TTL: 600}, {Name: "@", Type: "A", Data: "192.0.2.1", TTL: 600}}) {
+	if canonicalRecords([]DNSRecord{{Name: "@", Type: "A", Data: "192.0.2.1", TTL: 600}, {Name: "@", Type: "A", Data: "192.0.2.1", TTL: 600}}, "example.test") {
 		t.Fatal("duplicate records accepted")
 	}
-	if !canonicalRecords(nil) {
+	if !canonicalRecords(nil, "example.test") {
 		t.Fatal("empty canonical record set rejected")
 	}
 	for _, record := range []DNSRecord{
 		{Name: "@", Type: "TXT", Data: "", TTL: 600},
 		{Name: "@", Type: "TXT", Data: strings.Repeat("a", maxProviderRecordDataSize+1), TTL: 600},
 	} {
-		if canonicalRecords([]DNSRecord{record}) {
+		if canonicalRecords([]DNSRecord{record}, "example.test") {
 			t.Errorf("provider-invalid record data accepted: length=%d", len(record.Data))
 		}
+	}
+	longZone := strings.Repeat("a", 63) + "." + strings.Repeat("b", 63) + "." + strings.Repeat("c", 48) + ".test"
+	if canonicalRecords([]DNSRecord{{Name: strings.Repeat("d", 63) + "._domainkey", Type: "TXT", Data: "value", TTL: 600}}, longZone) {
+		t.Fatal("overlong in-zone record owner accepted")
 	}
 	for index, entries := range [][]CertificateOwnership{
 		{{Hostname: "mail.example.test", Owner: "first"}, {Hostname: "mail.example.test", Owner: "second"}},
