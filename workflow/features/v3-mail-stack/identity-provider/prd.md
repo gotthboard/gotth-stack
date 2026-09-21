@@ -12,8 +12,8 @@ no supported way to grant the first administrator role.
 ## Required result
 
 Given one explicit deployment environment, public zone, web hostname,
-Authentik hostname, mail hostname, addresses, private upstreams, secret-file
-references, DKIM public material, and admitted provider artifact, Stack shall
+Authentik hostname, mail hostname, addresses, private upstreams, DKIM public
+material, and admitted provider artifact, Stack shall
 produce deterministic, digest-bound desired state containing:
 
 1. a complete Caddyfile for only TCP 80/443, routing the web hostname to GOTTH
@@ -32,7 +32,9 @@ produce deterministic, digest-bound desired state containing:
 
 The plan shall report candidate distribution as non-production-ready. It may
 be used for disposable acceptance but cannot authorize production DNS until
-the independently published extension has exact Forgejo/GitHub parity.
+the independently published extension has exact Forgejo/GitHub parity. Even
+after publication, production readiness remains false until separate admitted
+evidence exists for reverse DNS and Authentik blueprint application.
 
 ## Identity lifecycle requirements
 
@@ -50,8 +52,10 @@ satisfy this requirement.
 
 ## Security and userspace
 
-- Secret values have no representation; only distinct canonical
-  `/run/secrets/` references are accepted.
+- Secret values have no representation. Container references are fixed to the
+  admitted mail-runtime OIDC target `/run/secrets/oidc-client-secret` and the
+  one-shot Authentik import target `/run/secrets/scim-client-token`; callers
+  cannot select paths.
 - All public hostnames are distinct. A certificate or listener has one owner.
 - Caddy cannot proxy SMTP/IMAP and mail front cannot own HTTP.
 - Upstreams are literal loopback or admitted private addresses with explicit
@@ -77,3 +81,10 @@ reviewed candidate evidence:
 
 Implementation remains responsible for revalidating and pinning both exact
 candidates; candidate status is not production publication.
+
+Local composition also reports two deliberate production blockers:
+
+- `ptr_authority_unverified`, because forward-zone authority cannot prove PTR;
+- `authentik_blueprint_apply_unavailable`, because the current Authentik
+  runtime adapter does not admit tenant-blueprint application or its one-shot
+  credential mounts.

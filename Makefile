@@ -1,4 +1,4 @@
-.PHONY: verify verify-web verify-caddy verify-postgresql verify-authentik verify-mail verify-controller verify-provider-extensions coverage build provider-conformance mail-identity-authentik-conformance frontend-dependencies generate-web
+.PHONY: verify verify-web verify-caddy verify-postgresql verify-authentik verify-mail verify-controller verify-provider-extensions coverage build provider-conformance mail-identity-authentik-conformance mail-identity-caddy-conformance frontend-dependencies generate-web
 
 verify: verify-web verify-caddy verify-postgresql verify-authentik verify-mail verify-controller verify-provider-extensions
 	version="$$(go env GOVERSION)"; test "$${version%%-*}" = "go1.26.6"
@@ -90,3 +90,7 @@ provider-conformance:
 mail-identity-authentik-conformance:
 	@test -n "$(GOTTH_GODADDY_ARTIFACT)" || { echo "GOTTH_GODADDY_ARTIFACT is required" >&2; exit 2; }
 	./scripts/test-mail-identity-authentik.sh "$(GOTTH_GODADDY_ARTIFACT)"
+
+mail-identity-caddy-conformance:
+	@test -n "$(GOTTH_GODADDY_ARTIFACT)" || { echo "GOTTH_GODADDY_ARTIFACT is required" >&2; exit 2; }
+	./scripts/test-mail-identity-caddy.sh "$(GOTTH_GODADDY_ARTIFACT)"

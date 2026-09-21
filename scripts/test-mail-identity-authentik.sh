@@ -57,7 +57,7 @@ test -f "$artifact"
 docker_cmd image inspect "$authentik_image" >/dev/null
 docker_cmd image inspect "$postgres_image" >/dev/null
 cd "$root"
-go run ./integration/render-mail-identity.go "$artifact" >"$scratch/blueprint.yaml"
+go run ./integration/render-mail-identity.go "$artifact" authentik >"$scratch/blueprint.yaml"
 printf '%s' 'disposable-mail-oidc-secret' >"$scratch/oidc-client-secret"
 printf '%s' 'disposable-mail-scim-token' >"$scratch/scim-token"
 chmod 444 "$scratch/oidc-client-secret" "$scratch/scim-token"
@@ -83,8 +83,8 @@ done
 
 docker_cmd run -d --name "$server_name" --network "$network_name" \
 	-v "$scratch/blueprint.yaml:/test/blueprint.yaml:ro" \
-	-v "$scratch/oidc-client-secret:/run/secrets/gotth-mail-oidc-client:ro" \
-	-v "$scratch/scim-token:/run/secrets/gotth-mail-scim-token:ro" \
+	-v "$scratch/oidc-client-secret:/run/secrets/oidc-client-secret:ro" \
+	-v "$scratch/scim-token:/run/secrets/scim-client-token:ro" \
 	-e AUTHENTIK_SECRET_KEY=disposable-only-secret-key-at-least-fifty-characters-1234567890 \
 	-e POSTGRES_PASSWORD=disposable-password \
 	-e AUTHENTIK_POSTGRESQL__HOST="$postgres_name" \
@@ -93,8 +93,8 @@ docker_cmd run -d --name "$server_name" --network "$network_name" \
 wait_for "$server_name" 'from django.db import connection; connection.ensure_connection()' 240
 
 docker_cmd run -d --name "$worker_name" --network "$network_name" \
-	-v "$scratch/oidc-client-secret:/run/secrets/gotth-mail-oidc-client:ro" \
-	-v "$scratch/scim-token:/run/secrets/gotth-mail-scim-token:ro" \
+	-v "$scratch/oidc-client-secret:/run/secrets/oidc-client-secret:ro" \
+	-v "$scratch/scim-token:/run/secrets/scim-client-token:ro" \
 	-e AUTHENTIK_SECRET_KEY=disposable-only-secret-key-at-least-fifty-characters-1234567890 \
 	-e POSTGRES_PASSWORD=disposable-password \
 	-e AUTHENTIK_POSTGRESQL__HOST="$postgres_name" \
@@ -114,8 +114,8 @@ from authentik.providers.scim.models import SCIMProvider
 
 raw = Path("/test/blueprint.yaml").read_text()
 missing_raw = raw.replace(
-    "/run/secrets/gotth-mail-oidc-client",
-    "/run/secrets/missing-gotth-mail-oidc-client",
+    "/run/secrets/oidc-client-secret",
+    "/run/secrets/missing-oidc-client-secret",
 )
 assert missing_raw != raw
 missing = Importer.from_string(missing_raw)

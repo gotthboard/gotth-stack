@@ -12,8 +12,8 @@ import (
 )
 
 func main() {
-	if len(os.Args) != 2 {
-		_, _ = fmt.Fprintln(os.Stderr, "usage: go run ./integration/render-mail-identity.go <provider-artifact>")
+	if len(os.Args) != 3 || os.Args[2] != "authentik" && os.Args[2] != "caddy" {
+		_, _ = fmt.Fprintln(os.Stderr, "usage: go run ./integration/render-mail-identity.go <provider-artifact> <authentik|caddy>")
 		os.Exit(2)
 	}
 	artifact, err := os.ReadFile(os.Args[1])
@@ -37,7 +37,6 @@ func main() {
 		Environment: mailidentity.EnvironmentDisposable,
 		Zone:        "example.test", WebHostname: "mail.example.test", IdentityHostname: "auth.example.test", MailHostname: "mx.example.test",
 		IPv4: "192.0.2.10", IPv6: "2001:db8::10", ProductUpstream: "10.0.0.2:8080", AuthentikUpstream: "10.0.0.3:9000",
-		OIDCClientSecretFile: "/run/secrets/gotth-mail-oidc-client", SCIMTokenFile: "/run/secrets/gotth-mail-scim-token",
 		DKIMSelector: "mail", DKIMPublicKeyTXT: "v=DKIM1; k=rsa; p=QUJDRA==",
 		DMARCReportAddress: "mailto:dmarc@example.test", TLSRPTReportAddress: "mailto:tlsrpt@example.test",
 		DNSInstanceID: request.InstanceID, ProviderAdmission: admission,
@@ -45,10 +44,14 @@ func main() {
 	if err != nil {
 		fail(err)
 	}
-	if result.ProductionReady || len(result.Blockers) != 1 || result.Blockers[0].Code != "provider_publication_unavailable" {
+	if !result.Verified() || result.ProductionReady || len(result.Blockers) != 3 {
 		fail(fmt.Errorf("unexpected candidate readiness"))
 	}
-	if _, err := os.Stdout.Write(result.AuthentikBlueprint); err != nil {
+	output := result.AuthentikBlueprint
+	if os.Args[2] == "caddy" {
+		output = result.Caddyfile
+	}
+	if _, err := os.Stdout.Write(output); err != nil {
 		fail(err)
 	}
 }

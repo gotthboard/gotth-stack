@@ -3,9 +3,10 @@
 ## Mechanism
 
 `internal/composition/mailidentity` is a pure package. It validates one closed
-input and renders one immutable result. It performs no filesystem, DNS, HTTP,
-Docker, database, or tenant mutation. The caller separately passes each output
-to an admitted adapter or provider operation under journal authority.
+input and renders one tamper-evident result. It performs no filesystem, DNS,
+HTTP, Docker, database, or tenant mutation. The caller separately passes each
+output to an admitted adapter or provider operation under journal authority,
+which must reject the result unless its private composition seal verifies.
 
 The package imports the exact `gotth-authentik` pseudo-version corresponding
 to mirrored commit `7f7f86e21fbb7ca85e3a0ba78e381509326d6d03`.
@@ -33,14 +34,17 @@ The aggregate composition digest covers a canonical JSON wire containing only
 the environment, public identifiers, component digests, ownership table,
 records, provider source/artifact pins, admission/grant/session digests, and release-readiness
 state. It contains no credential values or host filesystem paths except the
-two fixed container-visible secret references.
+two fixed container-visible secret references. The private seal covers every
+exported output, component digest, blocker, and readiness bit; mutation after
+composition invalidates `Verified()`.
 
 ## Caddy and certificate authority
 
-Caddy binds only 80/443. Three distinct HTTPS site labels exist: web,
-identity, and `mta-sts.<zone>`. GOTTH Mail and Authentik upstreams are fixed
-private endpoints. The MTA-STS site returns the computed policy only at
-`/.well-known/mta-sts.txt` and 404 elsewhere.
+Caddy binds only TCP 80/443 and explicitly limits protocols to HTTP/1.1 and
+HTTP/2; HTTP/3/QUIC and UDP/443 are not admitted. Three distinct HTTPS site
+labels exist: web, identity, and `mta-sts.<zone>`. GOTTH Mail and Authentik
+upstreams are fixed private endpoints. The MTA-STS site returns the computed
+policy only at `/.well-known/mta-sts.txt` and 404 elsewhere.
 
 Mail front owns 25/465/587/143/993 and the certificate for the distinct mail
 hostname. Caddy owns certificates for the other three hostnames. The result is
@@ -66,6 +70,9 @@ Validation returns fixed sentinel classes without echoing attacker-controlled
 input. No partial output is returned. Composition accepts only an opaque
 verified result returned by `godaddydns.VerifyAndAdmit`; callers cannot
 construct publication authority. Candidate admission produces an honest
-`ReleaseReady=false`; production composition rejects it. Missing role
-authority, PTR authority, public values, or publication proof remains a named
-blocker rather than a manual step.
+`ReleaseReady=false`; production composition rejects it. Published provider
+evidence still cannot make the composition production-ready: PTR authority and
+an admitted Authentik blueprint-application mechanism remain named blockers.
+The fixed OIDC file path matches the mail runtime adapter; the fixed SCIM token
+path is used only by the disposable one-shot import proof and does not pretend
+that the current Authentik runtime adapter mounts it.

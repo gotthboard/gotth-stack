@@ -2,6 +2,7 @@ package mailidentity
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"net/netip"
 	"os"
@@ -25,7 +26,6 @@ func validInput() Input {
 		Environment: EnvironmentDisposable, Zone: "example.test",
 		WebHostname: "mail.example.test", IdentityHostname: "auth.example.test", MailHostname: "mx.example.test",
 		IPv4: "192.0.2.10", IPv6: "2001:db8::10", ProductUpstream: "10.0.0.2:8080", AuthentikUpstream: "10.0.0.3:9000",
-		OIDCClientSecretFile: "/run/secrets/gotth-mail-oidc-client", SCIMTokenFile: "/run/secrets/gotth-mail-scim-token",
 		DKIMSelector: "mail", DKIMPublicKeyTXT: "v=DKIM1; k=rsa; p=QUJDRA==",
 		DMARCReportAddress: "mailto:dmarc@example.test", TLSRPTReportAddress: "mailto:tlsrpt@example.test",
 		DNSInstanceID: "11111111-1111-1111-1111-111111111111",
@@ -52,23 +52,23 @@ func TestComposeVerifiedDeterministicDesiredState(t *testing.T) {
 	if err != nil || !reflect.DeepEqual(first, second) {
 		t.Fatalf("nondeterministic result err=%v", err)
 	}
-	if first.ProductionReady || len(first.Blockers) != 1 || first.Blockers[0].Code != "provider_publication_unavailable" || first.Digests.Composition == "" {
+	if !first.Verified() || first.ProductionReady || !reflect.DeepEqual(first.Blockers, []Blocker{{"authentik_blueprint_apply_unavailable"}, {"ptr_authority_unverified"}, {"provider_publication_unavailable"}}) || first.Digests.Composition == "" {
 		t.Fatalf("candidate readiness=%#v", first)
 	}
 	blueprint := string(first.AuthentikBlueprint)
-	for _, required := range []string{"gotth-mail-oidc", "gotth-mail-users", "gotth-mail-scim", "!File \"/run/secrets/gotth-mail-oidc-client\"", "!File \"/run/secrets/gotth-mail-scim-token\""} {
+	for _, required := range []string{"gotth-mail-oidc", "gotth-mail-users", "gotth-mail-scim", "!File \"/run/secrets/oidc-client-secret\"", "!File \"/run/secrets/scim-client-token\""} {
 		if !strings.Contains(blueprint, required) {
 			t.Fatalf("blueprint missing %q", required)
 		}
 	}
-	for _, required := range []string{"mail.example.test", "auth.example.test", "mta-sts.example.test", "/.well-known/mta-sts.txt", "mx: mx.example.test"} {
+	for _, required := range []string{"protocols h1 h2", "mail.example.test", "auth.example.test", "mta-sts.example.test", "/.well-known/mta-sts.txt", "mx: mx.example.test"} {
 		if !bytes.Contains(first.Caddyfile, []byte(required)) {
 			t.Fatalf("Caddyfile missing %q", required)
 		}
 	}
 	wantVariables := []Variable{
 		{"GOTTH_MAIL_AUTHENTIK_CLIENT_ID", "gotth-mail"},
-		{"GOTTH_MAIL_AUTHENTIK_CLIENT_SECRET_FILE", "/run/secrets/gotth-mail-oidc-client"},
+		{"GOTTH_MAIL_AUTHENTIK_CLIENT_SECRET_FILE", "/run/secrets/oidc-client-secret"},
 		{"GOTTH_MAIL_AUTHENTIK_ISSUER", "https://auth.example.test/application/o/gotth-mail/"},
 		{"GOTTH_MAIL_AUTHENTIK_REDIRECT_URI", "https://mail.example.test/api/v1/oidc/callback"},
 		{"GOTTH_MAIL_SCIM_EXTERNAL_URL", "https://mail.example.test/scim/v2"},
@@ -99,7 +99,7 @@ func TestComposeVerifiedPublishedAndIPv4OnlyStates(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !result.ProductionReady || result.Blockers != nil || result.DNSRequest.Distribution != godaddydns.DistributionPublished || result.DNSRequest.GitHubCommit != godaddydns.ExpectedSourceCommit {
+	if !result.Verified() || result.ProductionReady || !reflect.DeepEqual(result.Blockers, []Blocker{{"authentik_blueprint_apply_unavailable"}, {"ptr_authority_unverified"}}) || result.DNSRequest.Distribution != godaddydns.DistributionPublished || result.DNSRequest.GitHubCommit != godaddydns.ExpectedSourceCommit {
 		t.Fatalf("published result=%#v", result)
 	}
 	for _, record := range result.Records {
@@ -125,6 +125,7 @@ func TestComposeRejectsUnverifiedAdmissionAndInvalidInputs(t *testing.T) {
 		func(value *Input) { value.ProductUpstream = value.AuthentikUpstream },
 		func(value *Input) { value.DKIMPublicKeyTXT = "secret\nvalue" },
 		func(value *Input) { value.DKIMPublicKeyTXT = "v=DKIM1; k=rsa; p=A=A" },
+		func(value *Input) { value.DKIMPublicKeyTXT = "v=DKIM1; k=rsa; p=" + strings.Repeat("A", 496) },
 		func(value *Input) { value.DMARCReportAddress = "mailto:dmarc@other.test" },
 	}
 	for index, mutate := range invalid {
@@ -137,7 +138,7 @@ func TestComposeRejectsUnverifiedAdmissionAndInvalidInputs(t *testing.T) {
 }
 
 func TestProductionAddressAndReservedZoneValidation(t *testing.T) {
-	for _, raw := range []string{"10.0.0.1", "100.64.0.1", "192.0.0.1", "198.18.0.1", "203.0.113.1", "224.0.0.1", "64:ff9b::1", "2001::1", "2001:db8::1", "2002::1", "fc00::1"} {
+	for _, raw := range []string{"10.0.0.1", "100.64.0.1", "192.0.0.1", "198.18.0.1", "203.0.113.1", "224.0.0.1", "64:ff9b::1", "2001::1", "2001:db8::1", "2002::1", "3fff::1", "fc00::1"} {
 		ipv4 := !strings.Contains(raw, ":")
 		if _, err := validateAddress(raw, ipv4, EnvironmentProduction); !errors.Is(err, ErrInvalidInput) {
 			t.Errorf("non-public production address %q err=%v", raw, err)
@@ -149,7 +150,10 @@ func TestProductionAddressAndReservedZoneValidation(t *testing.T) {
 			t.Errorf("public production address %q err=%v", raw, err)
 		}
 	}
-	for _, zone := range []string{"example.com", "mail.example.com", "example.net", "example.org", "mail.test", "mail.invalid", "mail.example", "mail.localhost"} {
+	if _, err := validateAddress("3fff::1", false, EnvironmentDisposable); err != nil {
+		t.Fatalf("RFC 9637 documentation address rejected in disposable mode: %v", err)
+	}
+	for _, zone := range []string{"example.com", "mail.example.com", "example.net", "example.org", "mail.test", "mail.invalid", "mail.example", "mail.localhost", "mail.local"} {
 		if !reservedProductionZone(zone) {
 			t.Errorf("reserved production zone %q accepted", zone)
 		}
@@ -194,20 +198,34 @@ func TestStrictJSONCanonicalBoundary(t *testing.T) {
 	}
 }
 
-func TestComposeVerifiedRejectsSecretPathMisuse(t *testing.T) {
-	configuration, binding := candidateConfiguration(), candidateBinding()
-	evidence := providerEvidence{Admission: strings.Repeat("a", 64), Grant: strings.Repeat("b", 64), Session: strings.Repeat("c", 64)}
-	invalid := []func(*Input){
-		func(value *Input) { value.OIDCClientSecretFile = "relative-secret" },
-		func(value *Input) { value.OIDCClientSecretFile = "/run/secrets/../escaped" },
-		func(value *Input) { value.SCIMTokenFile = "/tmp/scim-token" },
-		func(value *Input) { value.SCIMTokenFile = value.OIDCClientSecretFile },
+func TestResultSealRejectsMutation(t *testing.T) {
+	input := validInput()
+	result, err := composeVerified(input, "mta-sts.example.test", mustAddr(t, input.IPv4), mustAddr(t, input.IPv6), candidateConfiguration(), candidateBinding(), providerEvidence{Admission: strings.Repeat("a", 64), Grant: strings.Repeat("b", 64), Session: strings.Repeat("c", 64)})
+	if err != nil || !result.Verified() {
+		t.Fatalf("valid result err=%v verified=%v", err, result.Verified())
 	}
-	for index, mutate := range invalid {
-		input := validInput()
-		mutate(&input)
-		if _, err := composeVerified(input, "mta-sts.example.test", mustAddr(t, input.IPv4), mustAddr(t, input.IPv6), configuration, binding, evidence); !errors.Is(err, ErrInvalidInput) {
-			t.Errorf("invalid secret paths %d err=%v", index, err)
+	mutations := []func(Result) Result{
+		func(value Result) Result {
+			value.Caddyfile = append([]byte(nil), value.Caddyfile...)
+			value.Caddyfile[0] ^= 1
+			return value
+		},
+		func(value Result) Result {
+			value.Records = append([]DNSRecord(nil), value.Records...)
+			value.Records[0].Data = "203.0.113.99"
+			return value
+		},
+		func(value Result) Result {
+			value.DNSRequest.Zones = append([]string(nil), value.DNSRequest.Zones...)
+			value.DNSRequest.Zones[0] = "other.test"
+			return value
+		},
+		func(value Result) Result { value.Digests.Caddyfile = strings.Repeat("0", 64); return value },
+		func(value Result) Result { value.Blockers = nil; return value },
+	}
+	for index, mutate := range mutations {
+		if mutate(result).Verified() {
+			t.Errorf("mutated result %d retained verification", index)
 		}
 	}
 }
@@ -224,8 +242,30 @@ func TestGeneratedCaddyfileAdaptsAndValidates(t *testing.T) {
 	}
 	command := exec.Command(caddy, "adapt", "--config", "-", "--adapter", "caddyfile", "--validate")
 	command.Stdin = bytes.NewReader(result.Caddyfile)
-	if output, err := command.CombinedOutput(); err != nil {
-		t.Fatalf("caddy adapt/validate: %v\n%s", err, output)
+	var stdout, stderr bytes.Buffer
+	command.Stdout, command.Stderr = &stdout, &stderr
+	if err := command.Run(); err != nil {
+		t.Fatalf("caddy adapt/validate: %v\n%s", err, stderr.Bytes())
+	}
+	var adapted struct {
+		Apps struct {
+			HTTP struct {
+				Servers map[string]struct {
+					Protocols []string `json:"protocols"`
+				} `json:"servers"`
+			} `json:"http"`
+		} `json:"apps"`
+	}
+	if err := json.Unmarshal(stdout.Bytes(), &adapted); err != nil {
+		t.Fatal(err)
+	}
+	if len(adapted.Apps.HTTP.Servers) == 0 {
+		t.Fatal("adapted Caddy configuration has no HTTP servers")
+	}
+	for name, server := range adapted.Apps.HTTP.Servers {
+		if !reflect.DeepEqual(server.Protocols, []string{"h1", "h2"}) {
+			t.Errorf("server %s protocols=%v", name, server.Protocols)
+		}
 	}
 }
 
@@ -249,7 +289,7 @@ func TestComposeExactProviderArtifact(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if result.ProductionReady || result.Digests.ProviderAdmission != admission.AdmissionSHA256 || result.DNSRequest.RecordTypes[3] != "SRV" {
+	if !result.Verified() || result.ProductionReady || result.Digests.ProviderAdmission != admission.AdmissionSHA256 || result.DNSRequest.RecordTypes[3] != "SRV" {
 		t.Fatalf("composition=%#v", result)
 	}
 	if _, _, err := validateAdmission(admission, input.DNSInstanceID, input.Zone, "ote", request.RecordTypes); err != nil {

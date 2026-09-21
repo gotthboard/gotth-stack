@@ -12,7 +12,6 @@ type Input struct {
     Zone, WebHostname, IdentityHostname, MailHostname string
     IPv4, IPv6 string
     ProductUpstream, AuthentikUpstream string
-    OIDCClientSecretFile, SCIMTokenFile string
     DKIMSelector, DKIMPublicKeyTXT string
     DMARCReportAddress, TLSRPTReportAddress string
     DNSInstanceID string
@@ -31,6 +30,7 @@ type Result struct {
 }
 
 func Compose(Input) (Result, error)
+func (Result) Verified() bool
 ```
 
 There is no options map, arbitrary site, arbitrary record, arbitrary Caddy
@@ -40,8 +40,10 @@ field.
 `godaddydns.Result` carries an unexported verification marker set only by
 `VerifyAndAdmit`. Composition rejects zero-value or caller-constructed results,
 parses and compares the admitted canonical provider configuration, and binds
-the admission, manifest, grant, and session digests. Production additionally
-requires the verified result's compiled `ReleaseReady` state.
+the admission, manifest, grant, and session digests. A private seal covers
+every result field and digest; consumers must call `Verified()` before using
+output. Provider publication alone cannot clear the separately named PTR and
+Authentik-blueprint-application blockers.
 
 ## Validation
 
@@ -49,10 +51,12 @@ Canonical lowercase ASCII/punycode hostnames must lie inside the exact zone
 and be mutually distinct. Production requires public hostnames and at least one
 canonical public IP; disposable mode admits `.test` plus documentation IPs.
 Upstreams are canonical `host:port` values whose hosts are literal loopback or
-private IP addresses. Secret references reuse the same strict contract as the
-pinned Authentik library and must be distinct.
+private IP addresses. Secret references are not inputs. OIDC is fixed to the
+mail runtime adapter target `/run/secrets/oidc-client-secret`; the distinct
+one-shot SCIM import reference is `/run/secrets/scim-client-token`.
 
-DKIM is a bounded exact TXT value. Report destinations are exact `mailto:`
+DKIM is a canonical base64 exact TXT value bounded to the provider's 512-byte
+record-data limit. Report destinations are exact `mailto:`
 addresses inside the zone. TTL is fixed at 600 seconds. Duplicate logical
 records reject before rendering.
 
@@ -79,11 +83,12 @@ until retained cross-forge publication evidence changes the compiled pin.
 
 Tests must cover deterministic output, exact routes/URLs/records/owners,
 hostile hostnames, escaping attempts, public/private address rules, duplicate
-records, secret-path misuse, owner/listener overlap, candidate versus
+records, fixed secret-path output, owner/listener overlap, candidate versus
 production distribution, and fixed error redaction.
 
-Run Caddy `adapt` and `validate` against the generated Caddyfile. Import the
-generated Authentik blueprint twice in disposable Authentik 2026.5.2 with
+Run Caddy `adapt` and `validate` against the generated Caddyfile, then start it
+inside an isolated network namespace and prove exactly TCP 80/443 with no
+UDP/443 listener. Import the generated Authentik blueprint twice in disposable Authentik 2026.5.2 with
 mounted files. Exercise the pinned DNS artifact through compiled admission and
 process conformance. Product acceptance must then prove browser OIDC, complete
 SCIM lifecycle, durable role grant/revoke, session revocation, and Authentik

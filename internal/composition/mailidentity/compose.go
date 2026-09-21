@@ -39,7 +39,6 @@ type Input struct {
 	Zone, WebHostname, IdentityHostname, MailHostname string
 	IPv4, IPv6                                        string
 	ProductUpstream, AuthentikUpstream                string
-	OIDCClientSecretFile, SCIMTokenFile               string
 	DKIMSelector, DKIMPublicKeyTXT                    string
 	DMARCReportAddress, TLSRPTReportAddress           string
 	DNSInstanceID                                     string
@@ -95,7 +94,12 @@ type Result struct {
 	Digests                       Digests
 	ProductionReady               bool
 	Blockers                      []Blocker
+	seal                          string
 }
+
+// Verified reports whether this result is still the exact output of Compose.
+// Mutating any exported desired state or digest invalidates the private seal.
+func (result Result) Verified() bool { return result.seal != "" && result.seal == resultSeal(result) }
 
 type admittedConfiguration struct {
 	Schema         string   `json:"schema"`
@@ -116,7 +120,7 @@ type admittedBinding struct {
 
 var (
 	documentationIPv4 = []netip.Prefix{netip.MustParsePrefix("192.0.2.0/24"), netip.MustParsePrefix("198.51.100.0/24"), netip.MustParsePrefix("203.0.113.0/24")}
-	documentationIPv6 = netip.MustParsePrefix("2001:db8::/32")
+	documentationIPv6 = []netip.Prefix{netip.MustParsePrefix("2001:db8::/32"), netip.MustParsePrefix("3fff::/20")}
 	nonPublicPrefixes = []netip.Prefix{
 		netip.MustParsePrefix("0.0.0.0/8"), netip.MustParsePrefix("10.0.0.0/8"), netip.MustParsePrefix("100.64.0.0/10"),
 		netip.MustParsePrefix("127.0.0.0/8"), netip.MustParsePrefix("169.254.0.0/16"), netip.MustParsePrefix("172.16.0.0/12"),
@@ -125,10 +129,16 @@ var (
 		netip.MustParsePrefix("203.0.113.0/24"), netip.MustParsePrefix("224.0.0.0/4"), netip.MustParsePrefix("240.0.0.0/4"),
 		netip.MustParsePrefix("::/128"), netip.MustParsePrefix("::1/128"), netip.MustParsePrefix("64:ff9b::/96"),
 		netip.MustParsePrefix("64:ff9b:1::/48"), netip.MustParsePrefix("100::/64"), netip.MustParsePrefix("2001::/23"),
-		netip.MustParsePrefix("2001:db8::/32"), netip.MustParsePrefix("2002::/16"), netip.MustParsePrefix("fc00::/7"),
+		netip.MustParsePrefix("2001:db8::/32"), netip.MustParsePrefix("2002::/16"), netip.MustParsePrefix("3fff::/20"),
+		netip.MustParsePrefix("fc00::/7"),
 		netip.MustParsePrefix("fe80::/10"), netip.MustParsePrefix("ff00::/8"),
 	}
 	providerCapabilities = []string{"dns.records.create", "dns.records.delete", "dns.records.observe", "dns.records.replace"}
+)
+
+const (
+	oidcClientSecretFile = "/run/secrets/oidc-client-secret"
+	scimTokenFile        = "/run/secrets/scim-client-token"
 )
 
 func Compose(input Input) (Result, error) {
@@ -196,8 +206,8 @@ func composeVerified(input Input, mtaHostname string, ipv4, ipv6 netip.Addr, con
 			UserPath: "users/gotth-mail", AccessGroup: "gotth-mail-users", LaunchURL: "https://" + input.WebHostname + "/",
 			Provider: authentik.Provider{Name: "gotth-mail-oidc", ClientType: "confidential", ClientID: "gotth-mail", RedirectURIs: []string{callback}, AuthorizationFlow: "default-provider-authorization-implicit-consent", InvalidationFlow: "default-provider-invalidation-flow", SigningKey: "authentik Self-signed Certificate"},
 		},
-		OIDCClientSecretFile: input.OIDCClientSecretFile,
-		SCIM:                 authentik.SCIMBackchannel{Name: "gotth-mail-scim", URL: scimURL, TokenFile: input.SCIMTokenFile},
+		OIDCClientSecretFile: oidcClientSecretFile,
+		SCIM:                 authentik.SCIMBackchannel{Name: "gotth-mail-scim", URL: scimURL, TokenFile: scimTokenFile},
 	}
 	blueprint, err := authentik.RenderDeploymentBlueprint(deployment)
 	if err != nil {
@@ -205,11 +215,11 @@ func composeVerified(input Input, mtaHostname string, ipv4, ipv6 netip.Addr, con
 	}
 
 	policy := "version: STSv1\nmode: enforce\nmx: " + input.MailHostname + "\nmax_age: 86400\n"
-	caddyfile := []byte(fmt.Sprintf("{\n\tadmin off\n}\n\n%s {\n\treverse_proxy %s\n}\n\n%s {\n\treverse_proxy %s\n}\n\n%s {\n\t@policy path /.well-known/mta-sts.txt\n\thandle @policy {\n\t\theader Content-Type \"text/plain; charset=utf-8\"\n\t\trespond \"version: STSv1\\nmode: enforce\\nmx: %s\\nmax_age: 86400\\n\" 200\n\t}\n\trespond 404\n}\n", input.WebHostname, input.ProductUpstream, input.IdentityHostname, input.AuthentikUpstream, mtaHostname, input.MailHostname))
+	caddyfile := []byte(fmt.Sprintf("{\n\tadmin off\n\tservers {\n\t\tprotocols h1 h2\n\t}\n}\n\n%s {\n\treverse_proxy %s\n}\n\n%s {\n\treverse_proxy %s\n}\n\n%s {\n\t@policy path /.well-known/mta-sts.txt\n\thandle @policy {\n\t\theader Content-Type \"text/plain; charset=utf-8\"\n\t\trespond \"version: STSv1\\nmode: enforce\\nmx: %s\\nmax_age: 86400\\n\" 200\n\t}\n\trespond 404\n}\n", input.WebHostname, input.ProductUpstream, input.IdentityHostname, input.AuthentikUpstream, mtaHostname, input.MailHostname))
 
 	variables := []Variable{
 		{"GOTTH_MAIL_AUTHENTIK_CLIENT_ID", "gotth-mail"},
-		{"GOTTH_MAIL_AUTHENTIK_CLIENT_SECRET_FILE", input.OIDCClientSecretFile},
+		{"GOTTH_MAIL_AUTHENTIK_CLIENT_SECRET_FILE", oidcClientSecretFile},
 		{"GOTTH_MAIL_AUTHENTIK_ISSUER", issuer},
 		{"GOTTH_MAIL_AUTHENTIK_REDIRECT_URI", callback},
 		{"GOTTH_MAIL_SCIM_EXTERNAL_URL", scimURL},
@@ -230,15 +240,15 @@ func composeVerified(input Input, mtaHostname string, ipv4, ipv6 netip.Addr, con
 
 	distribution := godaddydns.DistributionCandidate
 	githubCommit := ""
-	blockers := []Blocker{{Code: "provider_publication_unavailable"}}
+	blockers := []Blocker{{Code: "authentik_blueprint_apply_unavailable"}, {Code: "ptr_authority_unverified"}, {Code: "provider_publication_unavailable"}}
 	if evidence.ReleaseReady {
 		distribution = godaddydns.DistributionPublished
 		githubCommit = godaddydns.ExpectedSourceCommit
-		blockers = nil
+		blockers = blockers[:2]
 	}
 	dnsRequest := godaddydns.Request{Distribution: distribution, ForgejoCommit: godaddydns.ExpectedSourceCommit, GitHubCommit: githubCommit, InstanceID: binding.InstanceID, Capabilities: append([]string(nil), providerCapabilities...), Zones: append([]string(nil), configuration.Zones...), RecordTypes: append([]string(nil), configuration.RecordTypes...), Environment: configuration.Environment, TimeoutSeconds: configuration.TimeoutSeconds}
 
-	result := Result{Caddyfile: caddyfile, AuthentikBlueprint: blueprint, MailVariables: variables, Certificates: certificates, Records: records, DNSRequest: dnsRequest, ProductionReady: input.Environment == EnvironmentProduction && evidence.ReleaseReady, Blockers: blockers}
+	result := Result{Caddyfile: caddyfile, AuthentikBlueprint: blueprint, MailVariables: variables, Certificates: certificates, Records: records, DNSRequest: dnsRequest, ProductionReady: false, Blockers: blockers}
 	result.Digests = Digests{
 		Caddyfile: digest(caddyfile), AuthentikBlueprint: digest(blueprint),
 		MailVariables: digestJSON(variables), Certificates: digestJSON(certificates), Records: digestJSON(records), DNSRequest: digestJSON(dnsRequest),
@@ -256,6 +266,7 @@ func composeVerified(input Input, mtaHostname string, ipv4, ipv6 netip.Addr, con
 		Blockers        []Blocker `json:"blockers,omitempty"`
 	}{"gotth.stack.mail-identity-composition.v1", string(input.Environment), input.Zone, input.WebHostname, input.IdentityHostname, input.MailHostname, result.Digests, result.ProductionReady, result.Blockers}
 	result.Digests.Composition = digestJSON(wire)
+	result.seal = resultSeal(result)
 	return result, nil
 }
 
@@ -387,7 +398,12 @@ func isDocumentation(address netip.Addr) bool {
 		}
 		return false
 	}
-	return documentationIPv6.Contains(address)
+	for _, prefix := range documentationIPv6 {
+		if prefix.Contains(address) {
+			return true
+		}
+	}
+	return false
 }
 
 func validUpstream(raw string) bool {
@@ -433,14 +449,14 @@ func reservedProductionZone(zone string) bool {
 		zone == "example.org" || strings.HasSuffix(zone, ".example.org") {
 		return true
 	}
-	return strings.HasSuffix(zone, ".test") || strings.HasSuffix(zone, ".example") || strings.HasSuffix(zone, ".invalid") || strings.HasSuffix(zone, ".localhost")
+	return strings.HasSuffix(zone, ".test") || strings.HasSuffix(zone, ".example") || strings.HasSuffix(zone, ".invalid") || strings.HasSuffix(zone, ".localhost") || strings.HasSuffix(zone, ".local")
 }
 
 func validSelector(value string) bool { return validLabel(value) }
 
 func validDKIM(value string) bool {
 	const prefix = "v=DKIM1; k=rsa; p="
-	if len(value) <= len(prefix) || len(value) > 4096 || !strings.HasPrefix(value, prefix) || !utf8.ValidString(value) {
+	if len(value) <= len(prefix) || len(value) > 512 || !strings.HasPrefix(value, prefix) || !utf8.ValidString(value) {
 		return false
 	}
 	encoded := value[len(prefix):]
@@ -484,6 +500,21 @@ func equalStrings(left, right []string) bool {
 		}
 	}
 	return true
+}
+
+func resultSeal(result Result) string {
+	wire := struct {
+		Caddyfile          []byte                 `json:"caddyfile"`
+		AuthentikBlueprint []byte                 `json:"authentik_blueprint"`
+		MailVariables      []Variable             `json:"mail_variables"`
+		Certificates       []CertificateOwnership `json:"certificates"`
+		Records            []DNSRecord            `json:"records"`
+		DNSRequest         godaddydns.Request     `json:"dns_request"`
+		Digests            Digests                `json:"digests"`
+		ProductionReady    bool                   `json:"production_ready"`
+		Blockers           []Blocker              `json:"blockers"`
+	}{result.Caddyfile, result.AuthentikBlueprint, result.MailVariables, result.Certificates, result.Records, result.DNSRequest, result.Digests, result.ProductionReady, result.Blockers}
+	return digestJSON(wire)
 }
 
 func digest(value []byte) string  { sum := sha256.Sum256(value); return hex.EncodeToString(sum[:]) }
